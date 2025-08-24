@@ -174,11 +174,18 @@ const MetricsChart: React.FC<MetricsChartProps> = ({
 
     // 转换为选项数组
     const diskOptions: DeviceOption[] = Array.from(disks.values()).map(
-      (disk) => ({
-        value: disk.mount_point,
-        label: `${disk.device} (${disk.mount_point})`,
-        // label: `${disk.device}`,
-      })
+      (disk) => {
+        // 处理包含 kaggle 的挂载点，去掉 /kaggle 前缀
+        let displayMountPoint = disk.mount_point;
+        if (disk.mount_point.includes('/kaggle/')) {
+          displayMountPoint = disk.mount_point.replace('/kaggle', '');
+        }
+        
+        return {
+          value: disk.mount_point,
+          label: `${disk.device} (${displayMountPoint})`,
+        };
+      }
     );
 
     const networkOptions: DeviceOption[] = Array.from(networks.values()).map(
