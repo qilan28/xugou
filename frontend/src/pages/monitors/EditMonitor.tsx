@@ -87,17 +87,15 @@ const EditMonitor = () => {
                   ? JSON.parse(monitor.headers)
                   : monitor.headers;
 
-              const headerPairs = Object.entries(headersObj).map(
+              const headerPairs = Object.entries(headersObj || {}).map(
                 ([key, value]) => ({
                   key,
                   value: value as string,
                 })
               );
 
-              // 如果没有请求头，添加一个空行，否则添加一个空行用于新增
+              // 如果没有请求头，保持一个空行用于输入
               if (headerPairs.length === 0) {
-                headerPairs.push({ key: "", value: "" });
-              } else {
                 headerPairs.push({ key: "", value: "" });
               }
 
@@ -106,6 +104,9 @@ const EditMonitor = () => {
               console.error(t("common.error.fetch"), error);
               setHeaders([{ key: "", value: "" }]);
             }
+          } else {
+            // 如果没有请求头数据，设置一个空行
+            setHeaders([{ key: "", value: "" }]);
           }
         } else {
           setError(response.message || t("common.error.fetch"));
