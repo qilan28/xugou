@@ -175,10 +175,14 @@ const MetricsChart: React.FC<MetricsChartProps> = ({
     // 转换为选项数组
     const diskOptions: DeviceOption[] = Array.from(disks.values()).map(
       (disk) => {
-        // 处理包含 kaggle 的挂载点，去掉 /kaggle 前缀
+        // 处理包含 kaggle 的挂载点，去掉 kaggle 相关路径
         let displayMountPoint = disk.mount_point;
         if (disk.mount_point.includes('/kaggle/')) {
+          // 处理 /kaggle/ 开头的路径，如 /kaggle/lib -> /lib
           displayMountPoint = disk.mount_point.replace('/kaggle', '');
+        } else if (disk.mount_point.endsWith('/kaggle')) {
+          // 处理以 /kaggle 结尾的路径，如 /etc/secrets/kaggle -> /etc/secrets/
+          displayMountPoint = disk.mount_point.replace('/kaggle', '/');
         }
         
         return {
