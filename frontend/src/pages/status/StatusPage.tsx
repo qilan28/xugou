@@ -131,7 +131,7 @@ const StatusPage = () => {
   return (
     <Theme appearance="light">
       <Box>
-        <div className="container mx-auto max-w-5xl px-4 sm:px-6">
+        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* 状态页标题区域 */}
           <Flex
             direction="column"
@@ -159,7 +159,7 @@ const StatusPage = () => {
                 {t("statusPage.agentStatus")}
               </Heading>
               <div className="flex flex-col items-center w-full">
-                <div className="w-full max-w-4xl space-y-4">
+                <div className="w-full max-w-6xl space-y-4">
                   {data.agents.map((agent) => (
                     <div key={agent.id}>
                       <div
@@ -203,7 +203,7 @@ const StatusPage = () => {
               <Heading size="5" mb="4">
                 {t("statusPage.apiServices")}
               </Heading>
-              <Grid columns={{ initial: "1" }} gap="4">
+              <div className="w-full max-w-6xl mx-auto grid grid-cols-1 gap-4">
                 {data.monitors.map((monitor) => (
                   <MonitorCard monitor={monitor} key={monitor.id} />
                 ))}
