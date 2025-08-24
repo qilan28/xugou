@@ -44,6 +44,7 @@ import {
   createNotificationChannel,
   updateNotificationChannel,
   deleteNotificationChannel,
+  testNotification,
 } from "../../api/notifications";
 import ChannelSelector from "../../components/ChannelSelector";
 
@@ -64,9 +65,15 @@ const NotificationsConfig = () => {
   const [isAddChannelOpen, setIsAddChannelOpen] = useState(false);
   const [isEditChannelOpen, setIsEditChannelOpen] = useState(false);
   const [isDeleteChannelOpen, setIsDeleteChannelOpen] = useState(false);
+  const [isTestTemplateOpen, setIsTestTemplateOpen] = useState(false);
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(
     null
   );
+  const [selectedTemplate, setSelectedTemplate] = useState<ApiNotificationTemplate | null>(null);
+  const [testForm, setTestForm] = useState({
+    channelIds: [] as string[],
+    testVariables: {} as Record<string, string>,
+  });
   const [channelForm, setChannelForm] = useState({
     name: "",
     type: "telegram",
@@ -632,6 +639,55 @@ const NotificationsConfig = () => {
     // setIsEditTemplateOpen(true);
   };
 
+  // 打开测试发送对话框
+  const handleTestTemplateClick = (template: ApiNotificationTemplate) => {
+    if (!template.id) {
+      console.error("无效的模板ID:", template.id);
+      toast.message(t("common.error.invalidId"));
+      return;
+    }
+
+    setSelectedTemplate(template);
+    setTestForm({
+      channelIds: [],
+      testVariables: {},
+    });
+    setIsTestTemplateOpen(true);
+  };
+
+  // 处理测试发送
+  const handleTestSend = async () => {
+    if (!selectedTemplate || !selectedTemplate.id) {
+      toast.error(t("notifications.templates.invalidTemplate"));
+      return;
+    }
+
+    if (testForm.channelIds.length === 0) {
+      toast.error(t("notifications.templates.selectChannel"));
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const response = await testNotification(selectedTemplate.id, {
+        channelIds: testForm.channelIds.map(id => Number(id)),
+        testVariables: testForm.testVariables,
+      });
+
+      if (response.success) {
+        toast.success(t("notifications.templates.testSuccess"));
+        setIsTestTemplateOpen(false);
+      } else {
+        toast.error(response.message || t("notifications.templates.testError"));
+      }
+    } catch (error) {
+      console.error("测试发送通知失败:", error);
+      toast.error(t("notifications.templates.testError"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // 渲染通知渠道标签页
   const renderChannelsTab = () => {
     if (!settings) return <Text>{t("common.loading")}...</Text>;
@@ -797,6 +853,12 @@ const NotificationsConfig = () => {
                               onClick={() => handleEditTemplateClick(template)}
                             >
                               {t("common.edit")}
+                            </Button>
+                            <Button
+                              variant="secondary"
+                              onClick={() => handleTestTemplateClick(template)}
+                            >
+                              {t("notifications.templates.test")}
                             </Button>
                             <Button
                               variant="secondary"
@@ -1768,6 +1830,145 @@ const NotificationsConfig = () => {
     );
   };
 
+  // 渲染测试发送对话框
+  const renderTestTemplateDialog = () => {
+    if (!selectedTemplate) return null;
+
+    return (
+      <Dialog
+        open={isTestTemplateOpen}
+        onOpenChange={(open) => {
+          if (!open) setIsTestTemplateOpen(false);
+        }}
+      >
+        <DialogContent>
+          <DialogTitle>{t("notifications.templates.testTitle")}</DialogTitle>
+          <DialogDescription>
+            {t("notifications.templates.testDescription")}
+          </DialogDescription>
+
+          <Flex direction="column" gap="3">
+            <Box>
+              <Text size="2" weight="medium" mb="2">
+                {t("notifications.templates.name")}
+              </Text>
+              <Text size="2">{selectedTemplate.name}</Text>
+            </Box>
+
+            <Box>
+              <Text size="2" weight="medium" mb="2">
+                {t("notifications.templates.subject")}
+              </Text>
+              <Text size="2">{selectedTemplate.subject}</Text>
+            </Box>
+
+            <Box>
+              <Text size="2" weight="medium" mb="2">
+                {t("notifications.templates.content")}
+              </Text>
+              <Text size="2">{selectedTemplate.content}</Text>
+            </Box>
+
+            <Box>
+              <Text size="2" weight="medium" mb="2">
+                {t("notifications.specificSettings.channels")}
+              </Text>
+              <ChannelSelector
+                channels={channels}
+                selectedChannelIds={testForm.channelIds}
+                onChange={(channelIds) =>
+                  setTestForm({
+                    ...testForm,
+                    channelIds,
+                  })
+                }
+              />
+            </Box>
+
+            <Box>
+              <Text size="2" weight="medium" mb="2">
+                {t("notifications.templates.testVariables")}
+              </Text>
+              <Flex direction="column" gap="2">
+                {Object.entries(testForm.testVariables).map(([key, value], index) => (
+                  <Flex key={index} gap="2" align="center">
+                    <TextField.Input
+                      size="1"
+                      placeholder={t("notifications.templates.variableKey")}
+                      value={key}
+                      onChange={(e) => {
+                        const newVariables = { ...testForm.testVariables };
+                        const oldValue = newVariables[key];
+                        delete newVariables[key];
+                        newVariables[e.target.value] = oldValue;
+                        setTestForm({
+                          ...testForm,
+                          testVariables: newVariables,
+                        });
+                      }}
+                    />
+                    <TextField.Input
+                      size="1"
+                      placeholder={t("notifications.templates.variableValue")}
+                      value={value}
+                      onChange={(e) => {
+                        setTestForm({
+                          ...testForm,
+                          testVariables: {
+                            ...testForm.testVariables,
+                            [key]: e.target.value,
+                          },
+                        });
+                      }}
+                    />
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        const newVariables = { ...testForm.testVariables };
+                        delete newVariables[key];
+                        setTestForm({
+                          ...testForm,
+                          testVariables: newVariables,
+                        });
+                      }}
+                    >
+                      {t("common.delete")}
+                    </Button>
+                  </Flex>
+                ))}
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setTestForm({
+                      ...testForm,
+                      testVariables: {
+                        ...testForm.testVariables,
+                        "": "",
+                      },
+                    });
+                  }}
+                >
+                  {t("notifications.templates.addVariable")}
+                </Button>
+              </Flex>
+            </Box>
+          </Flex>
+
+          <Flex gap="3" mt="6" justify="end">
+            <DialogClose>{t("common.cancel")}</DialogClose>
+            <Button
+              variant="secondary"
+              onClick={handleTestSend}
+              disabled={saving}
+            >
+              {saving ? t("notifications.templates.testing") : t("notifications.templates.test")}
+            </Button>
+          </Flex>
+        </DialogContent>
+      </Dialog>
+    );
+  };
+
   // 渲染删除确认对话框
   const renderDeleteDialog = () => {
     return (
@@ -1876,6 +2077,7 @@ const NotificationsConfig = () => {
       {/* 渠道管理对话框 */}
       {renderChannelDialog()}
       {renderDeleteDialog()}
+      {renderTestTemplateDialog()}
     </Box>
   );
 };
