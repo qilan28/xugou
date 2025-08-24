@@ -176,8 +176,8 @@ const MetricsChart: React.FC<MetricsChartProps> = ({
     const diskOptions: DeviceOption[] = Array.from(disks.values()).map(
       (disk) => ({
         value: disk.mount_point,
-        // label: `${disk.device} (${disk.mount_point})`,
-        label: `${disk.device}`,
+        label: `${disk.device} (${disk.mount_point})`,
+        // label: `${disk.device}`,
       })
     );
 
