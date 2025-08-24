@@ -131,7 +131,7 @@ const StatusPage = () => {
   return (
     <Theme appearance="light">
       <Box>
-        <div className="page-container sm:px-6 lg:px-[8%] px-4">
+        <div className="container mx-auto max-w-5xl px-4 sm:px-6">
           {/* 状态页标题区域 */}
           <Flex
             direction="column"
@@ -155,42 +155,44 @@ const StatusPage = () => {
           {/* 客户端监控状态 */}
           {data.agents.length > 0 && (
             <Box py="6">
-              <Heading size="5" mb="4">
+              <Heading size="5" mb="4" align="center">
                 {t("statusPage.agentStatus")}
               </Heading>
-              <div className="grid grid-cols-1 gap-4">
-                {data.agents.map((agent) => (
-                  <div key={agent.id}>
-                    <div
-                      className="cursor-pointer transition hover:scale-[1.01]"
-                      onClick={() => handleAgentClick(agent)}
-                    >
-                      <AgentStatusBar
-                        latestMetric={agent.metrics}
-                        agent={agent as any}
-                      />
-                    </div>
-                    {/* 展开的详情区域 */}
-                    {selectedAgent?.id === agent.id && (
-                      <div className="mt-4">
-                        {cardLoading ? (
-                          <div className="flex items-center justify-center h-40">
-                            <span className="text-lg text-gray-500">
-                              {t("common.loading")}
-                            </span>
-                          </div>
-                        ) : (
-                          <AgentCard
-                            agent={{
-                              ...selectedAgent,
-                              metrics: selectedAgentMetrics || [],
-                            }}
-                          />
-                        )}
+              <div className="flex flex-col items-center w-full">
+                <div className="w-full max-w-4xl space-y-4">
+                  {data.agents.map((agent) => (
+                    <div key={agent.id}>
+                      <div
+                        className="cursor-pointer transition hover:scale-[1.01]"
+                        onClick={() => handleAgentClick(agent)}
+                      >
+                        <AgentStatusBar
+                          latestMetric={agent.metrics}
+                          agent={agent as any}
+                        />
                       </div>
-                    )}
-                  </div>
-                ))}
+                      {/* 展开的详情区域 */}
+                      {selectedAgent?.id === agent.id && (
+                        <div className="mt-4">
+                          {cardLoading ? (
+                            <div className="flex items-center justify-center h-40">
+                              <span className="text-lg text-gray-500">
+                                {t("common.loading")}
+                              </span>
+                            </div>
+                          ) : (
+                            <AgentCard
+                              agent={{
+                                ...selectedAgent,
+                                metrics: selectedAgentMetrics || [],
+                              }}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
             </Box>
           )}
