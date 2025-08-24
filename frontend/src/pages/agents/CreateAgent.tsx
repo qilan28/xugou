@@ -10,7 +10,7 @@ import {
 } from "@radix-ui/react-icons";
 import { generateToken } from "../../api/agents";
 import { useTranslation } from "react-i18next";
-import { ENV_API_BASE_URL } from "../../config";
+
 
 const CreateAgent = () => {
   const navigate = useNavigate();
@@ -65,7 +65,9 @@ const CreateAgent = () => {
   // 生成并复制安装命令
   const installScriptUrl =
     "https://gh-proxy.com/github.com/zaunist/xugou/blob/main/install-agent.sh";
-  const oneLinerInstallCommand = `curl -sSL ${installScriptUrl} | bash -s -- --server ${serverUrl} --token ${token} --interval 60`;
+  const oneLinerInstallCommand = token ? 
+    `curl -sSL ${installScriptUrl} | bash -s -- --server ${serverUrl} --token ${token} --interval 60` : 
+    t("agent.add.generatingToken");
 
   const handleCopyInstallCommand = () => {
     navigator.clipboard.writeText(oneLinerInstallCommand);
@@ -98,13 +100,15 @@ const CreateAgent = () => {
             <Text as="label" size="2" weight="bold">
               {t("agent.add.serverAddress")}
             </Text>
-            <Flex gap="2" align="center">
-              <Text className="token-display">{serverUrl}</Text>
-              <Button variant="secondary" onClick={handleCopyServerUrl} className="ml-2">
-                {serverUrlCopied ? <CheckIcon /> : <CopyIcon />}
-                {serverUrlCopied ? t("common.copied") : t("common.copy")}
-              </Button>
-            </Flex>
+                          <Flex gap="2" align="center">
+                <Text className="token-display">{serverUrl || t("agent.add.generatingToken")}</Text>
+                {serverUrl && (
+                  <Button variant="secondary" onClick={handleCopyServerUrl} className="ml-2">
+                    {serverUrlCopied ? <CheckIcon /> : <CopyIcon />}
+                    {serverUrlCopied ? t("common.copied") : t("common.copy")}
+                  </Button>
+                )}
+              </Flex>
             <Text size="1" color="gray">
               {t("agent.add.serverAddressHelp")}
             </Text>
@@ -156,10 +160,12 @@ const CreateAgent = () => {
                   )}
                 </Text>
                 <Code size="2">{oneLinerInstallCommand}</Code>
-                <Button variant="secondary" onClick={handleCopyInstallCommand}>
-                  {installCommandCopied ? <CheckIcon /> : <CopyIcon />}
-                  {installCommandCopied ? t("common.copied") : t("common.copy")}
-                </Button>
+                {token && (
+                  <Button variant="secondary" onClick={handleCopyInstallCommand}>
+                    {installCommandCopied ? <CheckIcon /> : <CopyIcon />}
+                    {installCommandCopied ? t("common.copied") : t("common.copy")}
+                  </Button>
+                )}
                 <Text size="1" color="gray">
                   {t(
                     "agent.add.oneLinerCommandNote",
