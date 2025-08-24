@@ -17,7 +17,7 @@ const CreateAgent = () => {
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState("");
   // 获取当前浏览器访问的地址作为服务端地址
-  const serverUrl = ENV_API_BASE_URL;
+  const serverUrl = window.location.origin;
   const { t } = useTranslation();
 
   // State for copy buttons
