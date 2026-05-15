@@ -6,15 +6,48 @@
   --footer-height: 56px;
   --page-top-spacing: 24px;
   --section-spacing: 16px;
-  
+
   /* 基础字体设置 */
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* 滚动行为 */
+  scroll-behavior: smooth;
+}
+
+/* 自定义文本选中 */
+::selection {
+  background-color: var(--blue-4);
+  color: var(--blue-12);
+}
+
+::-moz-selection {
+  background-color: var(--blue-4);
+  color: var(--blue-12);
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gray-6);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-8);
 }
 
 /* 重置默认样式 */
@@ -30,24 +63,31 @@ body {
   min-height: 100vh;
   width: 100%;
   overflow-x: hidden;
+  background: linear-gradient(180deg, #fafbfc 0%, #f5f7fa 30%, #f0f3f8 100%);
+  background-attachment: fixed;
 }
 
 /* 链接样式 */
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--accent-9);
   text-decoration: inherit;
+  transition: color 0.2s ease;
 }
 
 a:hover {
-  color: #535bf2;
+  color: var(--accent-10);
 }
 
 /* 标题样式 */
 h1 {
   font-size: 3.2em;
   line-height: 1.1;
+  letter-spacing: -0.02em;
 }
+
+h2 { letter-spacing: -0.01em; }
+h3 { letter-spacing: -0.005em; }
 
 /* 按钮基础样式 */
 button {
@@ -57,55 +97,19 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
   cursor: pointer;
-  transition: border-color 0.25s;
+  transition: all 0.25s ease;
 }
 
-button:hover {
-  border-color: #646cff;
-}
-
-button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-/* 浅色主题设置 */
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  
-  a:hover {
-    color: #747bff;
-  }
-  
-  button {
-    background-color: #f9f9f9;
-  }
+  outline: 2px solid var(--accent-8);
+  outline-offset: 2px;
 }
 
 /* App样式 */
 #root {
   width: 100%;
   min-height: 100vh;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
 /* 页面容器样式 */
@@ -145,20 +149,25 @@ button:focus-visible {
 
 .text-input {
   width: 100%;
-  padding: 8px 12px;
+  padding: 10px 14px;
   font-size: 14px;
   line-height: 1.5;
-  border: 1px solid var(--gray-7);
-  border-radius: 4px;
-  background-color: var(--color-panel);
+  border: 1.5px solid var(--gray-6);
+  border-radius: 8px;
+  background-color: #fff;
   color: var(--gray-12);
-  transition: border-color 0.2s ease;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.text-input:hover {
+  border-color: var(--gray-8);
 }
 
 .text-input:focus {
   outline: none;
   border-color: var(--accent-8);
-  box-shadow: 0 0 0 1px var(--accent-8);
+  box-shadow: 0 0 0 3px var(--accent-4), 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .text-input::placeholder {
@@ -168,6 +177,22 @@ button:focus-visible {
 /* 通用卡片样式 */
 .card {
   padding: 2em;
+}
+
+/* 带渐变顶部强调线的卡片 */
+.card-accent-top {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-accent-top::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-9), var(--accent-7), var(--accent-9));
 }
 
 /* 响应式布局辅助类 */
@@ -181,4 +206,4 @@ button:focus-visible {
   .hide-on-desktop {
     display: none !important;
   }
-} 
+}

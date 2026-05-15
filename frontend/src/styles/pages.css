@@ -5,6 +5,7 @@
 
 .detail-content {
   margin-top: 1rem;
+  animation: slideUp 0.35s ease;
 }
 
 .system-info-item {
@@ -15,7 +16,8 @@
 }
 
 .system-info-label {
-  font-weight: bold;
+  font-weight: 600;
+  color: var(--gray-10);
 }
 
 .system-info-value {
@@ -31,65 +33,150 @@
   min-height: 60vh;
 }
 
-/* AgentsList页面样式 */
+/* ========== AgentsList页面样式 ========== */
 .agent-card {
   position: relative;
   overflow: hidden;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--gray-3);
   transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
 .agent-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
 }
 
 .status-indicator-active {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background-color: var(--green-9);
+  box-shadow: 0 0 6px var(--green-6);
   animation: pulse 2s infinite;
 }
 
 .status-indicator-connecting {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background-color: var(--amber-9);
+  box-shadow: 0 0 6px var(--amber-6);
+  animation: breathe 1.5s infinite;
 }
 
 .status-indicator-inactive {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
-  background-color: var(--red-9);
+  background-color: var(--gray-7);
 }
 
+/* 卡片左侧状态条 */
 .status-bar-active {
   position: absolute;
   top: 0;
   left: 0;
-  width: 4px;
+  width: 3px;
   height: 100%;
-  background: linear-gradient(to bottom, var(--green-9), var(--cyan-9));
+  background: linear-gradient(180deg, var(--green-8), var(--green-9), var(--cyan-8));
+  border-radius: 0 2px 2px 0;
 }
 
 .status-bar-connecting {
   position: absolute;
   top: 0;
   left: 0;
-  width: 4px;
+  width: 3px;
   height: 100%;
-  background: linear-gradient(to bottom, var(--amber-9), var(--yellow-9));
+  background: linear-gradient(180deg, var(--amber-8), var(--amber-9), var(--yellow-8));
+  border-radius: 0 2px 2px 0;
 }
 
 .status-bar-inactive {
   position: absolute;
   top: 0;
   left: 0;
-  width: 4px;
+  width: 3px;
   height: 100%;
-  background: linear-gradient(to bottom, var(--red-9), var(--amber-9));
-} 
+  background: linear-gradient(180deg, var(--gray-7), var(--gray-8));
+  border-radius: 0 2px 2px 0;
+}
+
+/* ========== Dashboard section headings ========== */
+.dashboard-section-title {
+  position: relative;
+  padding-left: 16px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.dashboard-section-title::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 2px;
+  width: 3px;
+  background: linear-gradient(180deg, var(--accent-7), var(--accent-9));
+  border-radius: 2px;
+}
+
+/* ========== Monitor detail page ========== */
+.monitor-detail-card {
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--gray-3);
+  overflow: hidden;
+}
+
+/* ========== Status page header ========== */
+.status-page-header {
+  position: relative;
+  overflow: hidden;
+}
+
+.status-page-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(ellipse at 30% 20%, var(--accent-2) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 80%, var(--blue-2) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.status-page-header > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* ========== 404 page ========== */
+.not-found-404 {
+  font-size: 8rem;
+  font-weight: 800;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--accent-9) 0%, var(--accent-7) 40%, var(--blue-9) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.03em;
+}
+
+/* ========== Resource detail cards ========== */
+.detail-stat-card {
+  border-radius: 10px;
+  border: 1px solid var(--gray-3);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.detail-stat-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}

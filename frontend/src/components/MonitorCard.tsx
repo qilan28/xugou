@@ -9,14 +9,9 @@ interface MonitorCardProps {
   monitor: Monitor;
 }
 
-/**
- * API监控卡片组件
- * 用于显示单个API监控服务的状态信息
- */
 const MonitorCard = ({ monitor }: MonitorCardProps) => {
   const { t } = useTranslation();
-  
-  // 状态图标组件
+
   const StatusIcon = ({ status }: { status: string }) => {
     switch (status) {
       case 'up':
@@ -29,46 +24,57 @@ const MonitorCard = ({ monitor }: MonitorCardProps) => {
     }
   };
 
-  // 状态颜色映射
   const statusColors: { [key: string]: string } = {
     'up': 'green',
     'down': 'red',
     'pending': 'amber'
   };
 
-  // 状态文本映射
   const statusText: { [key: string]: string } = {
     'up': t('monitorCard.status.up'),
     'down': t('monitorCard.status.down'),
     'pending': t('monitorCard.status.pending')
   };
 
-  // 获取当前监控的状态
   const currentStatus = monitor.status || 'pending';
 
   return (
-    <Card className="monitor-card">
+    <Card className={`monitor-card status-${currentStatus}`}>
       <Flex justify="between" align="start" p="4" gap="2" direction="column">
         <Flex justify="between" align="center" style={{ width: '100%' }}>
           <Flex align="center" gap="2">
             <StatusIcon status={currentStatus} />
             <Text weight="medium">{monitor.name}</Text>
           </Flex>
-          <Badge color={statusColors[currentStatus] as any}>
+          <Badge color={statusColors[currentStatus] as any} style={{
+            borderRadius: '10px',
+            padding: '2px 10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontSize: '12px',
+          }}>
+            <Box style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: currentStatus === 'up' ? 'var(--green-9)' : currentStatus === 'down' ? 'var(--red-9)' : 'var(--amber-9)',
+              animation: currentStatus === 'up' ? 'pulse 2s infinite' : 'none',
+            }} />
             {statusText[currentStatus]}
           </Badge>
         </Flex>
-        
+
         <Flex align="center" gap="2" style={{ width: '100%', minHeight: '8px' }}>
           <Text size="1" color="gray">
             {t('monitorCard.responseTime')}: {monitor.response_time || t('monitorCard.unknown')}ms
           </Text>
         </Flex>
-          
+
         <Box pt="2" style={{ width: '100%' }}>
-          <HeartbeatGrid 
-            uptime={monitor.uptime} 
-            history={monitor.history} 
+          <HeartbeatGrid
+            uptime={monitor.uptime}
+            history={monitor.history}
           />
         </Box>
       </Flex>

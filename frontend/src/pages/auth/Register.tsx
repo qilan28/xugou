@@ -11,23 +11,22 @@ const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const { register } = useAuth();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
-    // 验证密码
+
     if (password !== confirmPassword) {
       setError(t('register.error.passwordMismatch'));
       return;
     }
-    
+
     setIsLoading(true);
-    
+
     try {
       const result = await register({ username, password, email });
       if (result.success) {
@@ -41,32 +40,36 @@ const Register = () => {
       setIsLoading(false);
     }
   };
-  
+
   return (
     <div className="page-container">
       <Flex justify="center" align="center" style={{ minHeight: 'calc(100vh - 130px)', padding: '2rem 0' }}>
-        <Card style={{ width: '400px', padding: '2rem' }}>
+        <Card className="auth-card" style={{ width: '400px', padding: '2.5rem 2rem 2rem' }}>
           <Flex direction="column" gap="4">
-            <Heading align="center" size="6">{t('register.title')}</Heading>
-            
+            <Heading align="center" size="6" mb="1">{t('register.title')}</Heading>
+
             {error && (
-              <Text color="red" align="center">{error}</Text>
+              <Text color="red" align="center" size="2" style={{
+                background: 'var(--red-2)',
+                padding: '8px 12px',
+                borderRadius: '8px',
+              }}>{error}</Text>
             )}
-            
+
             <form onSubmit={handleSubmit}>
               <Flex direction="column" gap="3">
                 <div className="input-wrapper">
-                  <input 
-                    placeholder={t('register.username')} 
+                  <input
+                    placeholder={t('register.username')}
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     required
                     className="text-input"
                   />
                 </div>
-                
+
                 <div className="input-wrapper">
-                  <input 
+                  <input
                     placeholder={t('register.email')}
                     type="email"
                     value={email}
@@ -75,9 +78,9 @@ const Register = () => {
                     className="text-input"
                   />
                 </div>
-                
+
                 <div className="input-wrapper">
-                  <input 
+                  <input
                     placeholder={t('register.password')}
                     type="password"
                     value={password}
@@ -86,9 +89,9 @@ const Register = () => {
                     className="text-input"
                   />
                 </div>
-                
+
                 <div className="input-wrapper">
-                  <input 
+                  <input
                     placeholder={t('register.confirmPassword')}
                     type="password"
                     value={confirmPassword}
@@ -97,15 +100,18 @@ const Register = () => {
                     className="text-input"
                   />
                 </div>
-                
-                <Button type="submit" disabled={isLoading}>
+
+                <Button type="submit" disabled={isLoading} style={{
+                  background: 'linear-gradient(135deg, var(--accent-9), var(--accent-8))',
+                  marginTop: '4px',
+                }}>
                   {isLoading ? t('common.loading') : t('register.button')}
                 </Button>
               </Flex>
             </form>
-            
-            <Text align="center" size="2">
-              {t('register.loginLink')} <Link to="/login" style={{ color: 'var(--accent-9)', textDecoration: 'none' }}>{t('navbar.login')}</Link>
+
+            <Text align="center" size="2" style={{ color: 'var(--gray-9)' }}>
+              {t('register.loginLink')} <Link to="/login" style={{ color: 'var(--accent-9)', fontWeight: 600 }}>{t('navbar.login')}</Link>
             </Text>
           </Flex>
         </Card>
@@ -114,4 +120,4 @@ const Register = () => {
   );
 };
 
-export default Register; 
+export default Register;
