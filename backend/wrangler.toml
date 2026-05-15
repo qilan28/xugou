@@ -20,4 +20,4 @@ database_id = "26bf4587-0240-4fe7-b787-08b822d2ff7b"
 
 [vars]
 JWT_SECRET = "your-secret-key-change-in-production" 
-ENABLE_DB_INIT = "false" 
+ENABLE_DB_INIT = "true" 
