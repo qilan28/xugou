@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Flex, Heading, Text, Button, Card, TextField, Select, TextArea, Table, IconButton } from '@radix-ui/themes';
 import { ArrowLeftIcon, PlusIcon, TrashIcon } from '@radix-ui/react-icons';
 import { createMonitor } from '../../api/monitors';
 import StatusCodeSelect from '../../components/StatusCodeSelect';
@@ -9,304 +8,127 @@ import { useTranslation } from 'react-i18next';
 const CreateMonitor = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    url: '',
-    method: 'GET',
-    interval: 1, // 默认为1分钟
-    timeout: 30,
-    expectedStatus: 200,
-    body: ''
-  });
+  const [formData, setFormData] = useState({ name: '', url: '', method: 'GET', interval: 1, timeout: 30, expectedStatus: 200, body: '' });
+  const [headers, setHeaders] = useState<{ key: string; value: string }[]>([{ key: '', value: '' }]);
   const { t } = useTranslation();
-  
-  // 请求头部分使用键值对数组
-  const [headers, setHeaders] = useState<{ key: string; value: string }[]>([
-    { key: '', value: '' }
-  ]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: name === 'interval' || name === 'timeout' || name === 'expectedStatus' 
-        ? parseInt(value) || 0 
-        : value
-    }));
+    setFormData(prev => ({ ...prev, [name]: ['interval', 'timeout', 'expectedStatus'].includes(name) ? parseInt(value) || 0 : value }));
   };
-  
-  // 处理请求头键值对更改
+
   const handleHeaderChange = (index: number, field: 'key' | 'value', value: string) => {
     const newHeaders = [...headers];
     newHeaders[index][field] = value;
-    
-    // 如果最后一行有输入内容，添加新的空行
-    if (index === headers.length - 1 && (newHeaders[index].key || newHeaders[index].value)) {
-      newHeaders.push({ key: '', value: '' });
-    }
-    
+    if (index === headers.length - 1 && (newHeaders[index].key || newHeaders[index].value)) newHeaders.push({ key: '', value: '' });
     setHeaders(newHeaders);
   };
-  
-  // 删除请求头行
+
   const removeHeader = (index: number) => {
-    if (headers.length > 1) {
-      const newHeaders = [...headers];
-      newHeaders.splice(index, 1);
-      setHeaders(newHeaders);
-    }
-  };
-  
-  // 将键值对转换为JSON对象
-  const headersToJson = () => {
-    const result: Record<string, string> = {};
-    
-    headers.forEach(({ key, value }) => {
-      if (key.trim()) {
-        result[key.trim()] = value;
-      }
-    });
-    
-    return result;
+    if (headers.length > 1) { const h = [...headers]; h.splice(index, 1); setHeaders(h); }
   };
 
-  // 处理状态码变更
-  const handleStatusCodeChange = (value: number) => {
-    setFormData(prev => ({ ...prev, expectedStatus: value }));
+  const headersToJson = () => {
+    const result: Record<string, string> = {};
+    headers.forEach(({ key, value }) => { if (key.trim()) result[key.trim()] = value; });
+    return result;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      // 调用实际API，将分钟转换为秒
-      const response = await createMonitor({
-        name: formData.name,
-        url: formData.url,
-        method: formData.method,
-        interval: formData.interval * 60, // 转换为秒
-        timeout: formData.timeout,
-        expectedStatus: formData.expectedStatus,
-        headers: headersToJson(),
-        body: formData.body
-      });
-
-      if (response.success) {
-        navigate('/monitors');
-      } else {
-        alert(`${t('monitor.form.createFailed')}: ${response.message || t('monitor.form.unknownError')}`);
-      }
+      const response = await createMonitor({ name: formData.name, url: formData.url, method: formData.method, interval: formData.interval * 60, timeout: formData.timeout, expectedStatus: formData.expectedStatus, headers: headersToJson(), body: formData.body });
+      if (response.success) navigate('/monitors');
+      else alert(`${t('monitor.form.createFailed')}: ${response.message || t('monitor.form.unknownError')}`);
     } catch (error) {
-      console.error(t('monitor.form.createFailed'), error);
       alert(t('monitor.form.createFailed'));
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
-  // 判断是否需要显示请求体输入框
   const showBodyField = ['POST', 'PUT', 'PATCH'].includes(formData.method);
 
+  const inputClass = "w-full px-3 py-2 rounded-lg border border-white/[0.08] bg-white/5 text-sm text-slate-700 dark:text-slate-300 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 transition-all";
+  const labelClass = "block text-xs font-medium text-slate-500 mb-1.5";
+
   return (
-    <Box>
-      <div className="page-container detail-page">
-        <Flex justify="between" align="center" className="detail-header">
-          <Flex align="center" gap="2">
-            <Button variant="soft" size="1" onClick={() => navigate('/monitors')}>
-              <ArrowLeftIcon />
-            </Button>
-            <Heading size="6">{t('monitor.form.title.create')}</Heading>
-          </Flex>
-        </Flex>
-
-        <div className="detail-content">
-          <Card>
-            <form onSubmit={handleSubmit}>
-              <Box pt="2">
-                <Flex direction="column" gap="4">
-                  <Box>
-                    <Text as="label" size="2" style={{ marginBottom: '4px', display: 'block' }}>
-                      {t('monitor.form.name')} *
-                    </Text>
-                    <TextField.Input
-                      name="name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      placeholder={t('monitor.form.namePlaceholder')}
-                      required
-                    />
-                  </Box>
-
-                  <Box>
-                    <Text as="label" size="2" style={{ marginBottom: '4px', display: 'block' }}>
-                      URL *
-                    </Text>
-                    <TextField.Input
-                      name="url"
-                      value={formData.url}
-                      onChange={handleChange}
-                      placeholder={t('monitor.form.urlPlaceholder')}
-                      required
-                    />
-                  </Box>
-
-                  <Box>
-                    <Text as="label" size="2" style={{ marginBottom: '4px', display: 'block' }}>
-                      {t('monitor.form.method')} *
-                    </Text>
-                    <Select.Root 
-                      name="method" 
-                      value={formData.method} 
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, method: value }))}
-                    >
-                      <Select.Trigger />
-                      <Select.Content>
-                        <Select.Item value="GET">GET</Select.Item>
-                        <Select.Item value="POST">POST</Select.Item>
-                        <Select.Item value="PUT">PUT</Select.Item>
-                        <Select.Item value="DELETE">DELETE</Select.Item>
-                        <Select.Item value="HEAD">HEAD</Select.Item>
-                      </Select.Content>
-                    </Select.Root>
-                  </Box>
-
-                  <Flex gap="4">
-                    <Box style={{ flex: 1 }}>
-                      <Text as="label" size="2" style={{ marginBottom: '4px', display: 'block' }}>
-                        {t('monitor.form.interval')} *
-                      </Text>
-                      <TextField.Input
-                        name="interval"
-                        type="number"
-                        value={formData.interval.toString()}
-                        onChange={handleChange}
-                        min="1"
-                        required
-                      />
-                      <Text size="1" color="gray">
-                        {t('monitor.form.intervalMin')}
-                      </Text>
-                    </Box>
-
-                    <Box style={{ flex: 1 }}>
-                      <Text as="label" size="2" style={{ marginBottom: '4px', display: 'block' }}>
-                        {t('monitor.form.timeout')} *
-                      </Text>
-                      <TextField.Input
-                        name="timeout"
-                        type="number"
-                        value={formData.timeout.toString()}
-                        onChange={handleChange}
-                        min="1"
-                        required
-                      />
-                    </Box>
-                  </Flex>
-
-                  <Box>
-                    <Text as="label" size="2" style={{ marginBottom: '4px', display: 'block' }}>
-                      {t('monitor.form.expectedStatus')} *
-                    </Text>
-                    <StatusCodeSelect 
-                      value={formData.expectedStatus}
-                      onChange={handleStatusCodeChange}
-                      required
-                    />
-                  </Box>
-
-                  <Box>
-                    <Text as="label" size="2" style={{ marginBottom: '4px', display: 'block' }}>
-                      {t('monitor.form.headers')}
-                    </Text>
-                    <Box style={{ border: '1px solid var(--gray-6)', borderRadius: '6px', padding: '8px', marginBottom: '8px' }}>
-                      <Table.Root>
-                        <Table.Header>
-                          <Table.Row>
-                            <Table.ColumnHeaderCell>{t('monitor.form.headerName')}</Table.ColumnHeaderCell>
-                            <Table.ColumnHeaderCell>{t('monitor.form.headerValue')}</Table.ColumnHeaderCell>
-                            <Table.ColumnHeaderCell style={{ width: '40px' }}></Table.ColumnHeaderCell>
-                          </Table.Row>
-                        </Table.Header>
-                        <Table.Body>
-                          {headers.map((header, index) => (
-                            <Table.Row key={index}>
-                              <Table.Cell>
-                                <TextField.Input
-                                  placeholder={t('monitor.form.headerNamePlaceholder')}
-                                  value={header.key}
-                                  onChange={(e) => handleHeaderChange(index, 'key', e.target.value)}
-                                />
-                              </Table.Cell>
-                              <Table.Cell>
-                                <TextField.Input
-                                  placeholder={t('monitor.form.headerValuePlaceholder')}
-                                  value={header.value}
-                                  onChange={(e) => handleHeaderChange(index, 'value', e.target.value)}
-                                />
-                              </Table.Cell>
-                              <Table.Cell>
-                                <IconButton 
-                                  variant="soft" 
-                                  color="red" 
-                                  size="1"
-                                  onClick={() => removeHeader(index)}
-                                >
-                                  <TrashIcon />
-                                </IconButton>
-                              </Table.Cell>
-                            </Table.Row>
-                          ))}
-                        </Table.Body>
-                      </Table.Root>
-                      <Flex justify="end" mt="2">
-                        <Button 
-                          size="1" 
-                          variant="soft"
-                          onClick={() => setHeaders([...headers, { key: '', value: '' }])}
-                        >
-                          <PlusIcon />
-                          {t('monitor.form.addHeader')}
-                        </Button>
-                      </Flex>
-                    </Box>
-                    <Text size="1" color="gray">
-                      {t('monitor.form.headersHelp')}
-                    </Text>
-                  </Box>
-
-                  {showBodyField && (
-                    <Box>
-                      <Text as="label" size="2" style={{ marginBottom: '4px', display: 'block' }}>
-                        {t('monitor.form.body')}
-                      </Text>
-                      <TextArea
-                        name="body"
-                        value={formData.body}
-                        onChange={handleChange}
-                        placeholder={t('monitor.form.bodyPlaceholder')}
-                        style={{ minHeight: '100px' }}
-                      />
-                    </Box>
-                  )}
-                </Flex>
-              </Box>
-
-              <Flex justify="end" mt="4" gap="2">
-                <Button variant="soft" onClick={() => navigate('/monitors')}>
-                  {t('monitor.form.cancel')}
-                </Button>
-                <Button type="submit" disabled={loading}>
-                  {loading ? t('monitor.form.creating') : t('monitor.form.create')}
-                  {!loading && <PlusIcon />}
-                </Button>
-              </Flex>
-            </form>
-          </Card>
-        </div>
+    <div className="max-w-3xl mx-auto px-4 py-8 animate-slide-up">
+      <div className="flex items-center gap-3 mb-6">
+        <button onClick={() => navigate('/monitors')} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors text-slate-500"><ArrowLeftIcon /></button>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t('monitor.form.title.create')}</h1>
       </div>
-    </Box>
+
+      <div className="glass p-6">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div>
+            <label className={labelClass}>{t('monitor.form.name')} *</label>
+            <input name="name" value={formData.name} onChange={handleChange} placeholder={t('monitor.form.namePlaceholder')} required className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>URL *</label>
+            <input name="url" value={formData.url} onChange={handleChange} placeholder={t('monitor.form.urlPlaceholder')} required className={inputClass} />
+          </div>
+          <div>
+            <label className={labelClass}>{t('monitor.form.method')} *</label>
+            <select name="method" value={formData.method} onChange={handleChange} className={inputClass}>
+              {['GET', 'POST', 'PUT', 'DELETE', 'HEAD'].map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>{t('monitor.form.interval')} *</label>
+              <input name="interval" type="number" value={formData.interval} onChange={handleChange} min="1" required className={inputClass} />
+              <p className="text-xs text-slate-500 mt-1">{t('monitor.form.intervalMin')}</p>
+            </div>
+            <div>
+              <label className={labelClass}>{t('monitor.form.timeout')} *</label>
+              <input name="timeout" type="number" value={formData.timeout} onChange={handleChange} min="1" required className={inputClass} />
+            </div>
+          </div>
+          <div>
+            <label className={labelClass}>{t('monitor.form.expectedStatus')} *</label>
+            <StatusCodeSelect value={formData.expectedStatus} onChange={(v) => setFormData(prev => ({ ...prev, expectedStatus: v }))} required />
+          </div>
+          <div>
+            <label className={labelClass}>{t('monitor.form.headers')}</label>
+            <div className="border border-white/[0.08] rounded-lg p-3">
+              <table className="w-full">
+                <thead>
+                  <tr>
+                    <th className="text-left text-xs font-semibold text-slate-500 pb-2">{t('monitor.form.headerName')}</th>
+                    <th className="text-left text-xs font-semibold text-slate-500 pb-2">{t('monitor.form.headerValue')}</th>
+                    <th className="w-10"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {headers.map((h, i) => (
+                    <tr key={i}>
+                      <td className="pr-2 pb-2"><input placeholder={t('monitor.form.headerNamePlaceholder')} value={h.key} onChange={e => handleHeaderChange(i, 'key', e.target.value)} className={inputClass} /></td>
+                      <td className="pr-2 pb-2"><input placeholder={t('monitor.form.headerValuePlaceholder')} value={h.value} onChange={e => handleHeaderChange(i, 'value', e.target.value)} className={inputClass} /></td>
+                      <td className="pb-2"><button type="button" onClick={() => removeHeader(i)} className="p-2 rounded-md text-slate-500 hover:text-red-500 hover:bg-red-500/10 transition-colors"><TrashIcon /></button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <button type="button" onClick={() => setHeaders([...headers, { key: '', value: '' }])} className="mt-2 flex items-center gap-1 text-xs text-blue-500 hover:text-blue-400 transition-colors"><PlusIcon />{t('monitor.form.addHeader')}</button>
+            </div>
+          </div>
+          {showBodyField && (
+            <div>
+              <label className={labelClass}>{t('monitor.form.body')}</label>
+              <textarea name="body" value={formData.body} onChange={handleChange} placeholder={t('monitor.form.bodyPlaceholder')} className={inputClass} rows={5} style={{ minHeight: '100px' }} />
+            </div>
+          )}
+          <div className="flex justify-end gap-3 pt-2 border-t border-white/[0.06]">
+            <button type="button" onClick={() => navigate('/monitors')} className="px-4 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">{t('monitor.form.cancel')}</button>
+            <button type="submit" disabled={loading} className="btn-gradient px-5 py-2 text-sm flex items-center gap-1.5 disabled:opacity-60">
+              {loading ? t('monitor.form.creating') : t('monitor.form.create')}{!loading && <PlusIcon />}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 };
 
-export default CreateMonitor; 
+export default CreateMonitor;

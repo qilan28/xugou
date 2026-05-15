@@ -1,199 +1,80 @@
 import { useState, useEffect } from 'react';
-import { Button, Card, Flex, Heading, Text, TextField, Box } from '@radix-ui/themes';
 import { useAuth } from '../../contexts/AuthContext';
-import { updateUser, changePassword, UpdateUserRequest, ChangePasswordRequest } from '../../api/users';
+import { updateUser, changePassword } from '../../api/users';
 import { useTranslation } from 'react-i18next';
 
 const UserProfile = () => {
   const { user } = useAuth();
   const { t } = useTranslation();
-  
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
-  const [profileError, setProfileError] = useState('');
-  const [profileSuccess, setProfileSuccess] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [passwordSuccess, setPasswordSuccess] = useState('');
-  
-  const [isProfileLoading, setIsProfileLoading] = useState(false);
-  const [isPasswordLoading, setIsPasswordLoading] = useState(false);
-  
+  const [msg, setMsg] = useState('');
+  const [err, setErr] = useState('');
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
-    if (user) {
-      setUsername(user.username);
-      setEmail(user.email || '');
-    }
+    if (user) { setUsername(user.username || ''); setEmail(user.email || ''); }
   }, [user]);
-  
-  const handleProfileUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setProfileError('');
-    setProfileSuccess('');
-    setIsProfileLoading(true);
-    
-    if (!user) {
-      setProfileError(t('profile.error.notLoggedIn'));
-      setIsProfileLoading(false);
-      return;
-    }
-    
-    const data: UpdateUserRequest = {
-      username,
-      email: email || undefined
-    };
-    
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault(); setErr(''); setMsg(''); setLoading(true);
     try {
-      const response = await updateUser(user.id, data);
-      if (response.success) {
-        setProfileSuccess(t('profile.success.updated'));
-      } else {
-        setProfileError(response.message || t('profile.error.update'));
-      }
-    } catch (err: any) {
-      setProfileError(err.message || t('profile.error.update'));
-    } finally {
-      setIsProfileLoading(false);
-    }
+      const res = await updateUser(user?.id || 0, { username, email } as any);
+      if (res.success) setMsg(t('profile.updateSuccess'));
+      else setErr(res.message || t('profile.updateFailed'));
+    } catch { setErr(t('profile.updateFailed')); }
+    finally { setLoading(false); }
   };
-  
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPasswordError('');
-    setPasswordSuccess('');
-    
-    if (!user) {
-      setPasswordError(t('profile.error.notLoggedIn'));
-      return;
-    }
-    
-    if (newPassword !== confirmPassword) {
-      setPasswordError(t('profile.error.passwordMismatch'));
-      return;
-    }
-    
-    setIsPasswordLoading(true);
-    
-    const data: ChangePasswordRequest = {
-      currentPassword,
-      newPassword
-    };
-    
+
+  const handlePassword = async (e: React.FormEvent) => {
+    e.preventDefault(); setErr(''); setMsg('');
+    if (newPassword !== confirmPassword) { setErr(t('register.error.passwordMismatch')); return; }
+    setLoading(true);
     try {
-      const response = await changePassword(user.id, data);
-      if (response.success) {
-        setPasswordSuccess(t('profile.success.passwordChanged'));
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
-      } else {
-        setPasswordError(response.message || t('profile.error.passwordChange'));
-      }
-    } catch (err: any) {
-      setPasswordError(err.message || t('profile.error.passwordChange'));
-    } finally {
-      setIsPasswordLoading(false);
-    }
+      const res = await changePassword(user?.id || 0, { currentPassword, newPassword } as any);
+      if (res.success) { setMsg(t('profile.passwordChanged')); setCurrentPassword(''); setNewPassword(''); setConfirmPassword(''); }
+      else setErr(res.message || t('profile.changeFailed'));
+    } catch { setErr(t('profile.changeFailed')); }
+    finally { setLoading(false); }
   };
-  
-  if (!user) {
-    return <Text>{t('common.loading')}</Text>;
-  }
-  
+
+  const inputClass = "w-full px-3 py-2 rounded-lg border border-white/[0.08] bg-white/5 text-sm text-slate-700 dark:text-slate-300 placeholder:text-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 transition-all";
+  const labelClass = "block text-xs font-medium text-slate-500 mb-1.5";
+
   return (
-    <Box>
-      <div className="page-container detail-page">
-        <Flex justify="between" align="center" className="detail-header">
-          <Heading size="6">{t('profile.title')}</Heading>
-        </Flex>
-        
-        <div className="detail-content">
-          <Flex direction="column" gap="6">
-            <Card>
-              <Heading size="4" mb="4">{t('profile.basicInfo')}</Heading>
-              
-              {profileError && <Text color="red" mb="3">{profileError}</Text>}
-              {profileSuccess && <Text color="green" mb="3">{profileSuccess}</Text>}
-              
-              <form onSubmit={handleProfileUpdate}>
-                <Flex direction="column" gap="3">
-                  <Flex direction="column" gap="1">
-                    <Text size="2" weight="medium">{t('user.username')}</Text>
-                    <TextField.Input
-                      value={username}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUsername(e.target.value)}
-                      required
-                    />
-                  </Flex>
-                  
-                  <Flex direction="column" gap="1">
-                    <Text size="2" weight="medium">{t('user.email')}</Text>
-                    <TextField.Input
-                      type="email"
-                      value={email}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-                    />
-                  </Flex>
-                  
-                  <Button type="submit" disabled={isProfileLoading}>
-                    {isProfileLoading ? t('common.savingChanges') : t('profile.update')}
-                  </Button>
-                </Flex>
-              </form>
-            </Card>
-            
-            <Card>
-              <Heading size="4" mb="4">{t('profile.changePassword')}</Heading>
-              
-              {passwordError && <Text color="red" mb="3">{passwordError}</Text>}
-              {passwordSuccess && <Text color="green" mb="3">{passwordSuccess}</Text>}
-              
-              <form onSubmit={handlePasswordChange}>
-                <Flex direction="column" gap="3">
-                  <Flex direction="column" gap="1">
-                    <Text size="2" weight="medium">{t('profile.currentPassword')}</Text>
-                    <TextField.Input
-                      type="password"
-                      value={currentPassword}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCurrentPassword(e.target.value)}
-                      required
-                    />
-                  </Flex>
-                  
-                  <Flex direction="column" gap="1">
-                    <Text size="2" weight="medium">{t('profile.newPassword')}</Text>
-                    <TextField.Input
-                      type="password"
-                      value={newPassword}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewPassword(e.target.value)}
-                      required
-                    />
-                  </Flex>
-                  
-                  <Flex direction="column" gap="1">
-                    <Text size="2" weight="medium">{t('profile.confirmNewPassword')}</Text>
-                    <TextField.Input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
-                      required
-                    />
-                  </Flex>
-                  
-                  <Button type="submit" disabled={isPasswordLoading}>
-                    {isPasswordLoading ? t('common.savingChanges') : t('profile.changePasswordButton')}
-                  </Button>
-                </Flex>
-              </form>
-            </Card>
-          </Flex>
-        </div>
+    <div className="max-w-xl mx-auto px-4 py-8 animate-slide-up">
+      <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">{t('profile.title')}</h1>
+
+      {msg && <div className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-sm px-4 py-2.5 rounded-lg mb-4">{msg}</div>}
+      {err && <div className="bg-red-500/10 text-red-500 text-sm px-4 py-2.5 rounded-lg mb-4">{err}</div>}
+
+      <div className="glass p-6 mb-6">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{t('profile.editInfo')}</h2>
+        <form onSubmit={handleUpdate} className="flex flex-col gap-4">
+          <div><label className={labelClass}>{t('profile.username')}</label><input value={username} onChange={e => setUsername(e.target.value)} className={inputClass} /></div>
+          <div><label className={labelClass}>{t('profile.email')}</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} className={inputClass} /></div>
+          <div className="flex justify-end">
+            <button type="submit" disabled={loading} className="btn-gradient px-5 py-2 text-sm disabled:opacity-60">{t('profile.save')}</button>
+          </div>
+        </form>
       </div>
-    </Box>
+
+      <div className="glass p-6">
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white mb-4">{t('profile.changePassword')}</h2>
+        <form onSubmit={handlePassword} className="flex flex-col gap-4">
+          <div><label className={labelClass}>{t('profile.currentPassword')}</label><input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required className={inputClass} /></div>
+          <div><label className={labelClass}>{t('profile.newPassword')}</label><input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required className={inputClass} /></div>
+          <div><label className={labelClass}>{t('profile.confirmPassword')}</label><input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required className={inputClass} /></div>
+          <div className="flex justify-end">
+            <button type="submit" disabled={loading} className="btn-gradient px-5 py-2 text-sm disabled:opacity-60">{t('profile.change')}</button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 };
 
-export default UserProfile; 
+export default UserProfile;

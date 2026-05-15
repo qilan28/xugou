@@ -1,8 +1,5 @@
-import { Box, Card, Flex, Text, Badge } from '@radix-ui/themes';
-import { CheckCircledIcon, CrossCircledIcon, QuestionMarkCircledIcon } from '@radix-ui/react-icons';
 import { Monitor } from '../api/monitors';
 import HeartbeatGrid from './HeartbeatGrid';
-import '../styles/components.css';
 import { useTranslation } from 'react-i18next';
 
 interface MonitorCardProps {
@@ -12,73 +9,61 @@ interface MonitorCardProps {
 const MonitorCard = ({ monitor }: MonitorCardProps) => {
   const { t } = useTranslation();
 
-  const StatusIcon = ({ status }: { status: string }) => {
-    switch (status) {
-      case 'up':
-        return <CheckCircledIcon width="16" height="16" color="var(--green-9)" />;
-      case 'pending':
-        return <QuestionMarkCircledIcon width="16" height="16" color="var(--amber-9)" />;
-      case 'down':
-      default:
-        return <CrossCircledIcon width="16" height="16" color="var(--red-9)" />;
-    }
-  };
-
-  const statusColors: { [key: string]: string } = {
-    'up': 'green',
-    'down': 'red',
-    'pending': 'amber'
-  };
-
-  const statusText: { [key: string]: string } = {
-    'up': t('monitorCard.status.up'),
-    'down': t('monitorCard.status.down'),
-    'pending': t('monitorCard.status.pending')
-  };
-
   const currentStatus = monitor.status || 'pending';
 
+  const statusConfig: Record<string, { bg: string; text: string; dot: string; border: string; icon: string }> = {
+    up: {
+      bg: 'bg-emerald-500/10',
+      text: 'text-emerald-600 dark:text-emerald-400',
+      dot: 'bg-emerald-500 shadow-[0_0_6px_rgba(34,197,94,0.6)] animate-pulse-dot',
+      border: 'from-emerald-500 to-emerald-400',
+      icon: '✓',
+    },
+    down: {
+      bg: 'bg-red-500/10',
+      text: 'text-red-500',
+      dot: 'bg-red-500',
+      border: 'from-red-500 to-red-400',
+      icon: '✕',
+    },
+    pending: {
+      bg: 'bg-amber-500/10',
+      text: 'text-amber-600 dark:text-amber-400',
+      dot: 'bg-amber-500',
+      border: 'from-amber-500 to-amber-400',
+      icon: '?',
+    },
+  };
+
+  const config = statusConfig[currentStatus] || statusConfig.pending;
+  const statusLabel: Record<string, string> = {
+    up: t('monitorCard.status.up'),
+    down: t('monitorCard.status.down'),
+    pending: t('monitorCard.status.pending'),
+  };
+
   return (
-    <Card className={`monitor-card status-${currentStatus}`}>
-      <Flex justify="between" align="start" p="4" gap="2" direction="column">
-        <Flex justify="between" align="center" style={{ width: '100%' }}>
-          <Flex align="center" gap="2">
-            <StatusIcon status={currentStatus} />
-            <Text weight="medium">{monitor.name}</Text>
-          </Flex>
-          <Badge color={statusColors[currentStatus] as any} style={{
-            borderRadius: '10px',
-            padding: '2px 10px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            fontSize: '12px',
-          }}>
-            <Box style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              backgroundColor: currentStatus === 'up' ? 'var(--green-9)' : currentStatus === 'down' ? 'var(--red-9)' : 'var(--amber-9)',
-              animation: currentStatus === 'up' ? 'pulse 2s infinite' : 'none',
-            }} />
-            {statusText[currentStatus]}
-          </Badge>
-        </Flex>
+    <div className="glass glass-hover relative overflow-hidden group">
+      <div className={`absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r ${config.border}`} />
+      <div className="p-4">
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex items-center gap-2">
+            <span className={`text-sm font-bold ${config.text}`}>{config.icon}</span>
+            <span className="font-semibold text-sm text-slate-900 dark:text-white">{monitor.name}</span>
+          </div>
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${config.bg} ${config.text}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${config.dot}`} />
+            {statusLabel[currentStatus]}
+          </span>
+        </div>
 
-        <Flex align="center" gap="2" style={{ width: '100%', minHeight: '8px' }}>
-          <Text size="1" color="gray">
-            {t('monitorCard.responseTime')}: {monitor.response_time || t('monitorCard.unknown')}ms
-          </Text>
-        </Flex>
+        <div className="text-xs text-slate-500 mb-3">
+          {t('monitorCard.responseTime')}: {monitor.response_time || t('monitorCard.unknown')}ms
+        </div>
 
-        <Box pt="2" style={{ width: '100%' }}>
-          <HeartbeatGrid
-            uptime={monitor.uptime}
-            history={monitor.history}
-          />
-        </Box>
-      </Flex>
-    </Card>
+        <HeartbeatGrid uptime={monitor.uptime} history={monitor.history} />
+      </div>
+    </div>
   );
 };
 

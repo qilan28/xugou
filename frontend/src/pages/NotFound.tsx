@@ -1,4 +1,3 @@
-import { Flex, Heading, Text, Button } from '@radix-ui/themes';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 
@@ -6,20 +5,15 @@ const NotFound = () => {
   const { t } = useTranslation();
 
   return (
-    <div className="page-container">
-      <Flex direction="column" align="center" justify="center" style={{ minHeight: 'calc(100vh - 200px)' }} gap="3">
-        <div className="not-found-404">404</div>
-        <Heading size="6" mb="1">{t('notFound.title')}</Heading>
-        <Text align="center" style={{ maxWidth: '500px', color: 'var(--gray-10)' }}>
-          {t('notFound.message')}
-        </Text>
-        <Button size="3" mt="4" asChild style={{
-          background: 'linear-gradient(135deg, var(--accent-9), var(--accent-8))',
-          boxShadow: '0 2px 8px var(--accent-6)',
-        }}>
-          <Link to="/">{t('notFound.button')}</Link>
-        </Button>
-      </Flex>
+    <div className="max-w-lg mx-auto px-4 flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center gap-4">
+      <div className="text-[10rem] font-black leading-none bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+        404
+      </div>
+      <h2 className="text-2xl font-bold text-slate-900 dark:text-white">{t('notFound.title')}</h2>
+      <p className="text-slate-500 dark:text-slate-400 max-w-md">{t('notFound.message')}</p>
+      <Link to="/" className="btn-gradient px-8 py-3 mt-4 animate-glow">
+        {t('notFound.button')}
+      </Link>
     </div>
   );
 };

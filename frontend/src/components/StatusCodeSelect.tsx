@@ -1,6 +1,6 @@
-import { Select, Text } from '@radix-ui/themes';
+import { useState } from 'react';
+import { CheckIcon } from '@radix-ui/react-icons';
 
-// 状态码选项定义
 export const specificStatusCodes = [
   { group: '2xx - 成功', codes: [
     { label: '2xx - 所有成功状态码', value: 2, isRange: true },
@@ -37,50 +37,43 @@ interface StatusCodeSelectProps {
   required?: boolean;
 }
 
-/**
- * 预期状态码选择组件
- * 提供HTTP状态码和状态码范围的选择功能
- */
 const StatusCodeSelect = ({ value, onChange, name = "expectedStatus", required = false }: StatusCodeSelectProps) => {
+  const [open, setOpen] = useState(false);
+  const selected = specificStatusCodes.flatMap(g => g.codes).find(c => c.value === Number(value));
+
   return (
-    <>
-      <Select.Root 
-        name={name}
-        value={value.toString()} 
-        onValueChange={(value) => onChange(parseInt(value))}
-        required={required}
-      >
-        <Select.Trigger style={{ width: '100%' }} />
-        <Select.Content position="popper" sideOffset={5}>
-          {specificStatusCodes.map((group) => (
-            <Select.Group key={group.group}>
-              <Select.Label style={{ fontWeight: 'bold', padding: '8px 12px', color: 'var(--gray-10)' }}>
-                {group.group}
-              </Select.Label>
-              {group.codes.map((code) => (
-                <Select.Item 
-                  key={code.value} 
-                  value={code.value.toString()}
-                  style={{ 
-                    padding: code.isRange ? '8px 12px 8px 30px' : '8px 12px 8px 40px',
-                    fontWeight: code.isRange ? 'bold' : 'normal'
-                  }}
-                >
-                  {code.label}
-                </Select.Item>
-              ))}
-              {group !== specificStatusCodes[specificStatusCodes.length - 1] && (
-                <Select.Separator style={{ margin: '8px 0' }} />
-              )}
-            </Select.Group>
-          ))}
-        </Select.Content>
-      </Select.Root>
-      <Text size="1" color="gray" style={{ marginTop: '4px' }}>
-        选择预期的HTTP状态码或状态码范围
-      </Text>
-    </>
+    <div className="relative">
+      <input type="hidden" name={name} value={value} required={required} />
+      <button type="button" onClick={() => setOpen(!open)}
+        className="w-full px-3 py-2 rounded-lg border border-white/[0.08] bg-white/5 text-sm text-left text-slate-700 dark:text-slate-300 hover:border-blue-500/50 transition-colors flex items-center justify-between">
+        <span>{selected?.label || '选择状态码'}</span>
+        <svg className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute top-full left-0 mt-1 w-full z-20 glass py-1 max-h-80 overflow-y-auto animate-fade-in">
+            {specificStatusCodes.map((group, gi) => (
+              <div key={gi}>
+                <div className="px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase">{group.group}</div>
+                {group.codes.map(code => (
+                  <button key={code.value} type="button"
+                    onClick={() => { onChange(code.value); setOpen(false); }}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-white/5 transition-colors flex items-center justify-between ${
+                      Number(value) === code.value ? 'text-blue-500 font-medium' : 'text-slate-700 dark:text-slate-300'
+                    }`}
+                    style={{ paddingLeft: code.isRange ? '24px' : '32px' }}>
+                    {code.label}
+                    {Number(value) === code.value && <CheckIcon className="w-3.5 h-3.5" />}
+                  </button>
+                ))}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
   );
 };
 
-export default StatusCodeSelect; 
+export default StatusCodeSelect;

@@ -1,83 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Box, Flex, Heading, Text, Button, Card, Grid, Badge, Tabs, Table } from '@radix-ui/themes';
 import { CheckCircledIcon, CrossCircledIcon, ArrowLeftIcon, Pencil1Icon, TrashIcon, ReloadIcon, QuestionMarkCircledIcon, Cross2Icon } from '@radix-ui/react-icons';
 import * as Toast from '@radix-ui/react-toast';
-import { getMonitor, deleteMonitor, checkMonitor, Monitor, MonitorStatusHistory } from '../../api/monitors';
+import { getMonitor, deleteMonitor, checkMonitor, Monitor } from '../../api/monitors';
 import { useTranslation } from 'react-i18next';
-
-// 状态条组件 - 时间轴格子展示
-const StatusBar = ({ status, history = [] }: { status: string, uptime: number, history?: MonitorStatusHistory[] }) => {
-  const { t } = useTranslation();
-  
-  // 根据状态确定颜色
-  const getColor = (itemStatus: string) => {
-    switch (itemStatus) {
-      case 'up':
-        return 'var(--green-5)';
-      case 'down':
-        return 'var(--red-5)';
-      default:
-        return 'var(--gray-5)';
-    }
-  };
-
-  // 根据状态确定悬停颜色
-  const getHoverColor = (itemStatus: string) => {
-    switch (itemStatus) {
-      case 'up':
-        return 'var(--green-6)';
-      case 'down':
-        return 'var(--red-6)';
-      default:
-        return 'var(--gray-6)';
-    }
-  };
-
-  // 最多显示40个时间点
-  const maxPoints = 40;
-  
-  // 获取最近的历史记录
-  let displayHistory = history.slice(-maxPoints);
-  
-  // 如果历史记录为空，创建一个初始状态记录
-  if (displayHistory.length === 0) {
-    displayHistory = [{
-      id: 0,
-      monitor_id: 0,
-      status: status,
-      timestamp: new Date().toISOString()
-    }];
-  }
-  
-  // 计算每个格子的宽度
-  const boxWidth = `${100 / maxPoints}%`;
-  
-  return (
-    <Flex gap="1" style={{ width: '100%' }}>
-      {displayHistory.map((item, index) => (
-        <Box
-          key={item.id || `empty-${index}`}
-          style={{
-            width: boxWidth,
-            height: '20px',
-            backgroundColor: getColor(item.status),
-            borderRadius: '2px',
-            transition: 'background-color 0.2s',
-            cursor: 'pointer'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = getHoverColor(item.status);
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = getColor(item.status);
-          }}
-          title={`${t('common.status')}: ${item.status === 'up' ? t('monitor.status.normal') : item.status === 'down' ? t('monitor.status.failure') : t('monitor.status.pending')}\n${t('monitor.history.time')}: ${new Date(item.timestamp).toLocaleString()}`}
-        />
-      ))}
-    </Flex>
-  );
-};
 
 const MonitorDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -85,321 +11,174 @@ const MonitorDetail = () => {
   const [monitor, setMonitor] = useState<Monitor | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState('overview');
   const [toastOpen, setToastOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastType, setToastType] = useState<'success' | 'error'>('success');
+  const [toastMsg, setToastMsg] = useState('');
+  const [toastType, setToastType] = useState<'success'|'error'>('success');
   const { t } = useTranslation();
 
-  // 获取监控详情数据
-  const fetchMonitorData = async () => {
+  const fetchData = async () => {
     if (!id) return;
-    
     try {
       setLoading(true);
-      const response = await getMonitor(parseInt(id));
-      
-      if (response.success && response.monitor) {
-        setMonitor(response.monitor);
-      } else {
-        setError(response.message || t('common.error.fetch'));
-      }
-    } catch (err) {
-      console.error(t('common.error.fetch'), err);
-      setError(t('common.error.fetch'));
-    } finally {
-      setLoading(false);
-    }
+      const res = await getMonitor(parseInt(id));
+      if (res.success && res.monitor) setMonitor(res.monitor);
+      else setError(res.message || t('common.error.fetch'));
+    } catch { setError(t('common.error.fetch')); }
+    finally { setLoading(false); }
   };
 
-  // 组件加载时获取数据
-  useEffect(() => {
-    fetchMonitorData();
-    
-    // 设置定时器，每分钟刷新一次数据
-    const intervalId = setInterval(() => {
-      console.log('MonitorDetail: 自动刷新数据...');
-      fetchMonitorData();
-    }, 60000); // 60000ms = 1分钟
-    
-    // 组件卸载时清除定时器
-    return () => clearInterval(intervalId);
-  }, [id]);
+  useEffect(() => { fetchData(); const i = setInterval(fetchData, 60000); return () => clearInterval(i); }, [id]);
 
-  // 手动检查监控状态
   const handleCheck = async () => {
     if (!id) return;
-    
+    setLoading(true);
     try {
-      setLoading(true);
-      const response = await checkMonitor(parseInt(id));
-      
-      if (response.success) {
-        // 重新获取监控数据以显示最新状态
-        await fetchMonitorData();
-        setToastMessage(t('monitor.checkCompleted'));
-        setToastType('success');
-        setToastOpen(true);
-      } else {
-        setToastMessage(response.message || t('monitor.checkFailed'));
-        setToastType('error');
-        setToastOpen(true);
-      }
-    } catch (err) {
-      console.error(t('monitor.checkFailed'), err);
-      setToastMessage(t('monitor.checkFailed'));
-      setToastType('error');
-      setToastOpen(true);
-    } finally {
-      setLoading(false);
-    }
+      const res = await checkMonitor(parseInt(id));
+      if (res.success) { await fetchData(); setToastMsg(t('monitor.checkCompleted')); setToastType('success'); setToastOpen(true); }
+      else { setToastMsg(res.message || t('monitor.checkFailed')); setToastType('error'); setToastOpen(true); }
+    } catch { setToastMsg(t('monitor.checkFailed')); setToastType('error'); setToastOpen(true); }
+    finally { setLoading(false); }
   };
 
-  // 删除监控
   const handleDelete = async () => {
     if (!id || !window.confirm(t('monitors.delete.confirm'))) return;
-    
     try {
-      const response = await deleteMonitor(parseInt(id));
-      
-      if (response.success) {
-        setToastMessage(t('monitor.deleteSuccess'));
-        setToastType('success');
-        setToastOpen(true);
-        
-        // 短暂延迟后导航，让用户有时间看到提示
-        setTimeout(() => {
-          navigate('/monitors');
-        }, 1500);
-      } else {
-        setToastMessage(response.message || t('monitor.deleteFailed'));
-        setToastType('error');
-        setToastOpen(true);
-      }
-    } catch (err) {
-      console.error(t('monitor.deleteFailed'), err);
-      setToastMessage(t('monitor.deleteFailed'));
-      setToastType('error');
-      setToastOpen(true);
-    }
+      const res = await deleteMonitor(parseInt(id));
+      if (res.success) { setToastMsg(t('monitor.deleteSuccess')); setToastType('success'); setToastOpen(true); setTimeout(() => navigate('/monitors'), 1500); }
+      else { setToastMsg(res.message || t('monitor.deleteFailed')); setToastType('error'); setToastOpen(true); }
+    } catch { setToastMsg(t('monitor.deleteFailed')); setToastType('error'); setToastOpen(true); }
   };
 
-  // 状态图标
   const StatusIcon = ({ status }: { status: string }) => {
-    switch (status) {
-      case 'up':
-        return <CheckCircledIcon style={{ color: 'var(--green-9)' }} />;
-      case 'down':
-        return <CrossCircledIcon style={{ color: 'var(--red-9)' }} />;
-      default:
-        return <QuestionMarkCircledIcon style={{ color: 'var(--gray-9)' }} />;
-    }
+    switch (status) { case 'up': return <CheckCircledIcon className="text-emerald-500" />; case 'down': return <CrossCircledIcon className="text-red-500" />; default: return <QuestionMarkCircledIcon className="text-slate-400" />; }
   };
 
-  // 状态颜色映射
-  const statusColors: { [key: string]: 'green' | 'red' | 'gray' } = {
-    'up': 'green',
-    'down': 'red',
-    'pending': 'gray'
-  };
+  if (loading && !monitor) return <div className="flex justify-center items-center min-h-[50vh]"><div className="flex flex-col items-center gap-3"><div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /><span className="text-sm text-slate-500">{t('common.loading')}</span></div></div>;
+  if (error || !monitor) return <div className="max-w-4xl mx-auto px-4 py-8"><div className="glass border-l-4 border-red-500 p-4 mb-4"><span className="text-red-500">{error || t('monitor.notExist')}</span></div><button onClick={() => navigate('/monitors')} className="btn-gradient px-4 py-2 text-sm">{t('monitor.returnToList')}</button></div>;
 
-  // 加载中显示
-  if (loading) {
-    return (
-      <Box className="monitor-detail" p="4">
-        <Text>{t('common.loading')}</Text>
-      </Box>
-    );
-  }
-
-  // 错误显示
-  if (error || !monitor) {
-    return (
-      <Box className="monitor-detail" p="4">
-        <Text style={{ color: 'var(--red-9)' }}>{error || t('monitor.notExist')}</Text>
-        <Button variant="soft" onClick={() => navigate('/monitors')} mt="2">
-          {t('monitor.returnToList')}
-        </Button>
-      </Box>
-    );
-  }
+  const tabs = [
+    { key: 'overview', label: t('monitor.tabs.overview') },
+    { key: 'history', label: t('monitor.tabs.history') },
+    { key: 'settings', label: t('monitor.tabs.settings') },
+  ];
 
   return (
-    <Box className="monitor-detail" p="4">
-      <div>
-        <Flex justify="between" align="center" className="detail-header">
-          <Flex align="center" gap="2">
-            <Button variant="soft" size="1" onClick={() => navigate('/monitors')}>
-              <ArrowLeftIcon />
-            </Button>
-            <Heading size="6">{monitor.name}</Heading>
-            <Badge color={statusColors[monitor.status]}>
-              {monitor.status === 'up' ? t('monitor.status.normal') : monitor.status === 'down' ? t('monitor.status.failure') : t('monitor.status.pending')}
-            </Badge>
-          </Flex>
-          <Flex gap="2">
-            <Button variant="soft" onClick={handleCheck}>
-              <ReloadIcon />
-              {t('monitor.manualCheck')}
-            </Button>
-            <Button variant="soft" onClick={() => navigate(`/monitors/edit/${id}`)}>
-              <Pencil1Icon />
-              {t('monitor.edit')}
-            </Button>
-            <Button variant="soft" color="red" onClick={handleDelete}>
-              <TrashIcon />
-              {t('monitor.delete')}
-            </Button>
-          </Flex>
-        </Flex>
-
-        <Tabs.Root defaultValue="overview">
-          <Tabs.List>
-            <Tabs.Trigger value="overview">{t('monitor.tabs.overview')}</Tabs.Trigger>
-            <Tabs.Trigger value="history">{t('monitor.tabs.history')}</Tabs.Trigger>
-            <Tabs.Trigger value="settings">{t('monitor.tabs.settings')}</Tabs.Trigger>
-          </Tabs.List>
-
-          <Box pt="4" className="detail-content">
-            <Tabs.Content value="overview">
-              <Grid columns={{ initial: '1', sm: '2' }} gap="4">
-                <Card>
-                  <Flex direction="column" gap="3">
-                    <Heading size="4">{t('monitor.status.info')}</Heading>
-                    <Grid columns="2" gap="3">
-                      <Text>{t('common.status')}:</Text>
-                      <Flex align="center" gap="1">
-                        <StatusIcon status={monitor.status} />
-                        <Text>{monitor.status === 'up' ? t('monitor.status.normal') : monitor.status === 'down' ? t('monitor.status.failure') : t('monitor.status.pending')}</Text>
-                      </Flex>
-                      <Text>{t('monitor.uptime')}:</Text>
-                      <Box style={{ gridColumn: "2" }}>
-                        <StatusBar status={monitor.status} uptime={monitor.uptime} history={monitor.history} />
-                      </Box>
-                      <Text>{t('monitor.responseTime')}:</Text>
-                      <Text>{monitor.response_time}ms</Text>
-                      <Text>{t('monitor.lastCheck')}:</Text>
-                      <Text>{monitor.last_checked || t('monitor.notChecked')}</Text>
-                    </Grid>
-                  </Flex>
-                </Card>
-
-                <Card>
-                  <Flex direction="column" gap="3">
-                    <Heading size="4">{t('monitor.basicInfo')}</Heading>
-                    <Grid columns="2" gap="3">
-                      <Text>URL:</Text>
-                      <Text>{monitor.url}</Text>
-                      <Text>{t('monitor.method')}:</Text>
-                      <Text>{monitor.method}</Text>
-                      <Text>{t('monitor.interval')}:</Text>
-                      <Text>{monitor.interval} {t('common.seconds')}</Text>
-                      <Text>{t('monitor.timeout')}:</Text>
-                      <Text>{monitor.timeout} {t('common.seconds')}</Text>
-                      <Text>{t('monitor.expectedStatus')}:</Text>
-                      <Text>{monitor.expected_status}</Text>
-                      <Text>{t('monitor.createTime')}:</Text>
-                      <Text>{new Date(monitor.created_at).toLocaleString()}</Text>
-                    </Grid>
-                  </Flex>
-                </Card>
-              </Grid>
-            </Tabs.Content>
-
-            <Tabs.Content value="history">
-              <Card>
-                <Heading size="4" mb="3">{t('monitor.checkHistory')}</Heading>
-                {monitor.checks && monitor.checks.length > 0 ? (
-                  <Table.Root>
-                    <Table.Header>
-                      <Table.Row>
-                        <Table.ColumnHeaderCell>{t('monitor.history.time')}</Table.ColumnHeaderCell>
-                        <Table.ColumnHeaderCell>{t('monitor.history.status')}</Table.ColumnHeaderCell>
-                        <Table.ColumnHeaderCell>{t('monitor.history.responseTime')}</Table.ColumnHeaderCell>
-                        <Table.ColumnHeaderCell>{t('monitor.history.statusCode')}</Table.ColumnHeaderCell>
-                        <Table.ColumnHeaderCell>{t('monitor.history.error')}</Table.ColumnHeaderCell>
-                      </Table.Row>
-                    </Table.Header>
-                    <Table.Body>
-                      {monitor.checks.map((check) => (
-                        <Table.Row key={check.id}>
-                          <Table.Cell>{new Date(check.checked_at).toLocaleString()}</Table.Cell>
-                          <Table.Cell>
-                            <Flex align="center" gap="1">
-                              <StatusIcon status={check.status} />
-                              <Badge color={statusColors[check.status]}>
-                                {check.status === 'up' ? t('monitor.status.normal') : t('monitor.status.failure')}
-                              </Badge>
-                            </Flex>
-                          </Table.Cell>
-                          <Table.Cell>{check.response_time}ms</Table.Cell>
-                          <Table.Cell>{check.status_code}</Table.Cell>
-                          <Table.Cell>{check.error || '-'}</Table.Cell>
-                        </Table.Row>
-                      ))}
-                    </Table.Body>
-                  </Table.Root>
-                ) : (
-                  <Text>{t('monitor.noCheckHistory')}</Text>
-                )}
-              </Card>
-            </Tabs.Content>
-
-            <Tabs.Content value="settings">
-              <Card>
-                <Heading size="4" mb="3">{t('monitor.configDetails')}</Heading>
-                <Grid columns="2" gap="3">
-                  <Text>{t('common.name')}:</Text>
-                  <Text>{monitor.name}</Text>
-                  <Text>URL:</Text>
-                  <Text>{monitor.url}</Text>
-                  <Text>{t('monitor.method')}:</Text>
-                  <Text>{monitor.method}</Text>
-                  <Text>{t('monitor.interval')}:</Text>
-                  <Text>{monitor.interval} {t('common.seconds')}</Text>
-                  <Text>{t('monitor.timeout')}:</Text>
-                  <Text>{monitor.timeout} {t('common.seconds')}</Text>
-                  <Text>{t('monitor.expectedStatus')}:</Text>
-                  <Text>{monitor.expected_status}</Text>
-                  <Text>{t('monitor.headers')}:</Text>
-                  <Text style={{ overflowWrap: 'break-word' }}>
-                    {typeof monitor.headers === 'string' ? monitor.headers : JSON.stringify(monitor.headers)}
-                  </Text>
-                  <Text>{t('monitor.body')}:</Text>
-                  <Text style={{ overflowWrap: 'break-word' }}>{monitor.body || '-'}</Text>
-                  <Text>{t('common.status')}:</Text>
-                  <Text>{monitor.active ? t('monitor.active') : t('monitor.inactive')}</Text>
-                </Grid>
-              </Card>
-            </Tabs.Content>
-          </Box>
-        </Tabs.Root>
-        <Toast.Provider swipeDirection="right">
-          <Toast.Root 
-            className="ToastRoot" 
-            open={toastOpen} 
-            onOpenChange={setToastOpen}
-            duration={3000}
-            style={{ 
-              backgroundColor: toastType === 'success' ? 'var(--green-9)' : 'var(--red-9)', 
-              borderRadius: '8px',
-              zIndex: 9999 
-            }}
-          >
-            <Toast.Title className="ToastTitle">
-              {toastType === 'success' ? t('common.success') : t('common.error')}
-            </Toast.Title>
-            <Toast.Description className="ToastDescription">
-              {toastMessage}
-            </Toast.Description>
-            <Toast.Close className="ToastClose">
-              <Cross2Icon />
-            </Toast.Close>
-          </Toast.Root>
-          <Toast.Viewport className="ToastViewport" />
-        </Toast.Provider>
+    <div className="max-w-4xl mx-auto px-4 py-8 animate-slide-up">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate('/monitors')} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors text-slate-500"><ArrowLeftIcon /></button>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{monitor.name}</h1>
+          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+            monitor.status === 'up' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : monitor.status === 'down' ? 'bg-red-500/10 text-red-500' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+          }`}>
+            <StatusIcon status={monitor.status} />
+            {monitor.status === 'up' ? t('monitor.status.normal') : monitor.status === 'down' ? t('monitor.status.failure') : t('monitor.status.pending')}
+          </span>
+        </div>
+        <div className="flex gap-2">
+          <button onClick={handleCheck} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"><ReloadIcon />{t('monitor.manualCheck')}</button>
+          <button onClick={() => navigate(`/monitors/edit/${id}`)} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-amber-600 hover:bg-amber-500/10 transition-colors"><Pencil1Icon />{t('monitor.edit')}</button>
+          <button onClick={handleDelete} className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-red-500 hover:bg-red-500/10 transition-colors"><TrashIcon />{t('monitor.delete')}</button>
+        </div>
       </div>
-    </Box>
+
+      {/* Tabs */}
+      <div className="flex gap-1 mb-6 border-b border-white/[0.06]">
+        {tabs.map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)}
+            className={`px-4 py-2.5 text-sm font-medium transition-colors relative -mb-px ${
+              tab === t.key ? 'text-blue-500' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+            }`}>
+            {t.label}
+            {tab === t.key && <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full" />}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'overview' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="glass p-5">
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-3">{t('monitor.status.info')}</h3>
+            <div className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 text-sm">
+              <span className="text-slate-500">{t('common.status')}:</span>
+              <span className="flex items-center gap-1"><StatusIcon status={monitor.status} />{t(`monitor.status.${monitor.status === 'up' ? 'normal' : monitor.status === 'down' ? 'failure' : 'pending'}`)}</span>
+              <span className="text-slate-500">{t('monitor.uptime')}:</span>
+              <span>{Math.min(monitor.uptime || 0, 100).toFixed(2)}%</span>
+              <span className="text-slate-500">{t('monitor.responseTime')}:</span>
+              <span>{monitor.response_time}ms</span>
+              <span className="text-slate-500">{t('monitor.lastCheck')}:</span>
+              <span>{monitor.last_checked || t('monitor.notChecked')}</span>
+            </div>
+          </div>
+          <div className="glass p-5">
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-3">{t('monitor.basicInfo')}</h3>
+            <div className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 text-sm">
+              <span className="text-slate-500">URL:</span><span className="break-all">{monitor.url}</span>
+              <span className="text-slate-500">{t('monitor.method')}:</span><span>{monitor.method}</span>
+              <span className="text-slate-500">{t('monitor.interval')}:</span><span>{monitor.interval} {t('common.seconds')}</span>
+              <span className="text-slate-500">{t('monitor.timeout')}:</span><span>{monitor.timeout} {t('common.seconds')}</span>
+              <span className="text-slate-500">{t('monitor.expectedStatus')}:</span><span>{monitor.expected_status}</span>
+              <span className="text-slate-500">{t('monitor.createTime')}:</span><span>{new Date(monitor.created_at).toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === 'history' && (
+        <div className="glass p-5">
+          <h3 className="font-semibold text-slate-900 dark:text-white mb-3">{t('monitor.checkHistory')}</h3>
+          {monitor.checks && monitor.checks.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead><tr className="border-b border-white/[0.06]">{['time','status','responseTime','statusCode','error'].map(h => <th key={h} className="text-left px-3 py-2 text-xs font-semibold text-slate-500 uppercase">{t(`monitor.history.${h}`)}</th>)}</tr></thead>
+                <tbody>
+                  {monitor.checks.map((c: any) => (
+                    <tr key={c.id} className="border-b border-white/[0.04] hover:bg-white/[0.02]">
+                      <td className="px-3 py-2 text-sm text-slate-600 dark:text-slate-400">{new Date(c.checked_at).toLocaleString()}</td>
+                      <td className="px-3 py-2"><span className="flex items-center gap-1 text-sm"><StatusIcon status={c.status} />{t(`monitor.status.${c.status === 'up' ? 'normal' : 'failure'}`)}</span></td>
+                      <td className="px-3 py-2 text-sm text-slate-600 dark:text-slate-400">{c.response_time}ms</td>
+                      <td className="px-3 py-2 text-sm text-slate-600 dark:text-slate-400">{c.status_code}</td>
+                      <td className="px-3 py-2 text-sm text-slate-500">{c.error || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : <p className="text-sm text-slate-500">{t('monitor.noCheckHistory')}</p>}
+        </div>
+      )}
+
+      {tab === 'settings' && (
+        <div className="glass p-5">
+          <h3 className="font-semibold text-slate-900 dark:text-white mb-3">{t('monitor.configDetails')}</h3>
+          <div className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 text-sm">
+            {[
+              [t('common.name'), monitor.name],
+              ['URL', monitor.url],
+              [t('monitor.method'), monitor.method],
+              [t('monitor.interval'), `${monitor.interval} ${t('common.seconds')}`],
+              [t('monitor.timeout'), `${monitor.timeout} ${t('common.seconds')}`],
+              [t('monitor.expectedStatus'), String(monitor.expected_status)],
+              [t('common.status'), monitor.active ? t('monitor.active') : t('monitor.inactive')],
+            ].map(([k, v], i) => (
+              <><span key={`k${i}`} className="text-slate-500">{k}:</span><span key={`v${i}`}>{v}</span></>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <Toast.Provider>
+        <Toast.Root open={toastOpen} onOpenChange={setToastOpen} duration={3000}
+          className={`fixed bottom-6 right-6 z-[9999] px-5 py-3 rounded-xl shadow-lg text-white text-sm font-medium animate-slide-up ${toastType === 'success' ? 'bg-emerald-500' : 'bg-red-500'}`}>
+          <Toast.Title className="font-semibold">{toastType === 'success' ? t('common.success') : t('common.error')}</Toast.Title>
+          <Toast.Description className="text-white/80 text-xs mt-0.5">{toastMsg}</Toast.Description>
+          <Toast.Close className="absolute top-2 right-2 text-white/70 hover:text-white"><Cross2Icon /></Toast.Close>
+        </Toast.Root>
+        <Toast.Viewport />
+      </Toast.Provider>
+    </div>
   );
 };
 
-export default MonitorDetail; 
+export default MonitorDetail;

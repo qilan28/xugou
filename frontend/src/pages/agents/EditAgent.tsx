@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Box, Flex, Heading, Text, Button, Card, TextField } from '@radix-ui/themes';
 import { ArrowLeftIcon, Cross2Icon } from '@radix-ui/react-icons';
 import * as Toast from '@radix-ui/react-toast';
 import { getAgent, updateAgent } from '../../api/agents';
@@ -10,177 +9,66 @@ const EditAgent = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(false);
-  const [notFound, setNotFound] = useState(false);
+  const [fetching, setFetching] = useState(true);
+  const [name, setName] = useState('');
   const [toastOpen, setToastOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-  const [toastType, setToastType] = useState<'success' | 'error'>('success');
-  const initialFormData = {
-    name: '',
-    status: 'active' as 'active' | 'inactive'
-  };
-  const [formData, setFormData] = useState(initialFormData);
+  const [toastMsg, setToastMsg] = useState('');
+  const [toastType, setToastType] = useState<'success'|'error'>('success');
   const { t } = useTranslation();
 
   useEffect(() => {
-    const fetchAgentData = async () => {
-      try {
-        setLoading(true);
-        
-        const response = await getAgent(Number(id));
-        
-        if (response.success && response.agent) {
-          const agent = response.agent;
-          
-          setFormData({
-            name: agent.name,
-            status: agent.status || 'inactive'
-          });
-        } else {
-          setNotFound(true);
-        }
-      } catch (error) {
-        console.error('获取客户端数据失败:', error);
-        setNotFound(true);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    if (id) {
-      fetchAgentData();
-    }
+    if (!id) return;
+    getAgent(parseInt(id)).then(res => {
+      if (res.success && res.agent) setName(res.agent.name);
+      setFetching(false);
+    }).catch(() => setFetching(false));
   }, [id]);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+    if (!id) return;
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      // 准备提交数据 - 只包含名称
-      const payload = {
-        name: formData.name
-      };
-      
-      // 调用API更新客户端
-      const response = await updateAgent(Number(id), payload);
-      
-      if (response.success) {
-        setToastMessage(t('agent.form.updateSuccess'));
-        setToastType('success');
-        setToastOpen(true);
-        
-        // 短暂延迟后导航，让用户有时间看到提示
-        setTimeout(() => {
-          navigate('/agents');
-        }, 1500);
-      } else {
-        setToastMessage(response.message || t('agent.form.updateError'));
-        setToastType('error');
-        setToastOpen(true);
-      }
-    } catch (error) {
-      console.error('更新客户端失败:', error);
-      setToastMessage(t('agent.form.updateError'));
-      setToastType('error');
-      setToastOpen(true);
-    } finally {
-      setLoading(false);
-    }
+      const res = await updateAgent(parseInt(id), { name });
+      if (res.success) { setToastMsg(t('agent.updateSuccess')); setToastType('success'); setToastOpen(true); setTimeout(() => navigate('/agents'), 1500); }
+      else { setToastMsg(res.message || t('agent.updateFailed')); setToastType('error'); setToastOpen(true); }
+    } catch { setToastMsg(t('agent.updateFailed')); setToastType('error'); setToastOpen(true); }
+    finally { setLoading(false); }
   };
 
-  if (notFound) {
-    return (
-      <Box>
-        <Flex justify="center" align="center" style={{ minHeight: '60vh' }}>
-          <Card>
-            <Flex direction="column" align="center" gap="4" p="4">
-              <Heading size="6">{t('agents.notFound')}</Heading>
-              <Text>{t('agents.notFoundId', { id })}</Text>
-              <Button onClick={() => navigate('/agents')}>{t('common.backToList')}</Button>
-            </Flex>
-          </Card>
-        </Flex>
-      </Box>
-    );
-  }
+  const inputClass = "w-full px-3 py-2 rounded-lg border border-white/[0.08] bg-white/5 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/15 transition-all";
+
+  if (fetching) return <div className="flex justify-center items-center min-h-[50vh]"><span className="text-slate-500">{t('common.loading')}</span></div>;
 
   return (
-    <Box>
-      <div className="page-container detail-page">
-        <Flex justify="between" align="center" className="detail-header">
-          <Flex align="center" gap="2">
-            <Button variant="soft" size="1" onClick={() => navigate(`/agents/${id}`)}>
-              <ArrowLeftIcon />
-            </Button>
-            <Heading size="6">{t('agent.form.editingClient', { name: formData.name })}</Heading>
-          </Flex>
-        </Flex>
-
-        <div className="detail-content">
-          <Card>
-            <form onSubmit={handleSubmit}>
-              <Flex direction="column" gap="4">
-                <Box mb="4">
-                  <Text as="label" size="2" mb="1" weight="bold">
-                    {t('agent.form.name')} <Text size="2" color="red">*</Text>
-                  </Text>
-                  <TextField.Input
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder={t('agent.form.namePlaceholder')}
-                    required
-                  />
-                  <Text size="1" color="gray" mt="1">
-                    {t('agent.form.nameHelp')}
-                  </Text>
-                </Box>
-                
-                <Flex justify="end" mt="4" gap="2">
-                  <Button variant="soft" onClick={() => navigate(`/agents/${id}`)}>
-                    {t('common.cancel')}
-                  </Button>
-                  <Button type="submit" disabled={loading}>
-                    {loading ? t('common.savingChanges') : t('common.saveChanges')}
-                  </Button>
-                </Flex>
-              </Flex>
-            </form>
-          </Card>
-        </div>
-
-        <Toast.Provider swipeDirection="right">
-          <Toast.Root 
-            className="ToastRoot" 
-            open={toastOpen} 
-            onOpenChange={setToastOpen}
-            duration={2000}
-            style={{ backgroundColor: toastType === 'success' ? 'var(--green-9)' : 'var(--red-9)', borderRadius: '8px' }}
-          >
-            <Toast.Title className="ToastTitle">
-              {toastType === 'success' ? t('common.success') : t('common.error')}
-            </Toast.Title>
-            <Toast.Description className="ToastDescription">
-              {toastMessage}
-            </Toast.Description>
-            <Toast.Close className="ToastClose">
-              <Cross2Icon />
-            </Toast.Close>
-          </Toast.Root>
-          <Toast.Viewport className="ToastViewport" />
-        </Toast.Provider>
+    <div className="max-w-xl mx-auto px-4 py-8 animate-slide-up">
+      <div className="flex items-center gap-3 mb-6">
+        <button onClick={() => navigate('/agents')} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition-colors text-slate-500"><ArrowLeftIcon /></button>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t('agent.edit')}</h1>
       </div>
-    </Box>
+      <div className="glass p-6">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-500 mb-1.5">{t('agent.name')} *</label>
+            <input value={name} onChange={e => setName(e.target.value)} required className={inputClass} />
+          </div>
+          <div className="flex justify-end gap-3 pt-2 border-t border-white/[0.06]">
+            <button type="button" onClick={() => navigate('/agents')} className="px-4 py-2 rounded-lg text-sm text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors">{t('common.cancel')}</button>
+            <button type="submit" disabled={loading} className="btn-gradient px-5 py-2 text-sm disabled:opacity-60">{loading ? t('common.saving') : t('common.save')}</button>
+          </div>
+        </form>
+      </div>
+      <Toast.Provider>
+        <Toast.Root open={toastOpen} onOpenChange={setToastOpen} duration={3000}
+          className={`fixed bottom-6 right-6 z-[9999] px-5 py-3 rounded-xl shadow-lg text-white text-sm font-medium animate-slide-up ${toastType === 'success' ? 'bg-emerald-500' : 'bg-red-500'}`}>
+          <Toast.Title className="font-semibold">{toastType === 'success' ? t('common.success') : t('common.error')}</Toast.Title>
+          <Toast.Description className="text-white/80 text-xs mt-0.5">{toastMsg}</Toast.Description>
+          <Toast.Close className="absolute top-2 right-2 text-white/70 hover:text-white"><Cross2Icon /></Toast.Close>
+        </Toast.Root>
+        <Toast.Viewport />
+      </Toast.Provider>
+    </div>
   );
 };
 
-export default EditAgent; 
+export default EditAgent;

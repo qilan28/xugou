@@ -1,6 +1,4 @@
-import { Box, Flex, Text } from '@radix-ui/themes';
 import ResourceBar from './ResourceBar';
-import '../styles/components.css';
 import { useTranslation } from 'react-i18next';
 
 interface ClientResourceSectionProps {
@@ -11,119 +9,77 @@ interface ClientResourceSectionProps {
   networkTx: number;
 }
 
-/**
- * 网络流量单位自适应函数
- * @param value KB/s 的值
- * @returns 格式化后的字符串和用于进度条的百分比值
- */
 const formatNetworkSpeed = (value: number): { text: string, percent: number } => {
-  // 当值小于 1024 KB/s 时，显示 KB/s
   if (value < 1024) {
     return {
       text: `${value.toFixed(2)} KB/s`,
-      percent: Math.min(value / 51.2, 100) // 5MB/s 是进度条的满值
+      percent: Math.min(value / 51.2, 100)
     };
-  } 
-  // 当值大于等于 1024 KB/s 时，显示 MB/s
-  else {
+  } else {
     const valueMB = value / 1024;
     return {
       text: `${valueMB.toFixed(2)} MB/s`,
-      percent: Math.min(value / 51.2, 100) // 5MB/s 是进度条的满值
+      percent: Math.min(value / 51.2, 100)
     };
   }
 };
 
-/**
- * 客户端资源使用情况展示组件
- * 用于显示CPU、内存、磁盘和网络流量等资源使用情况
- */
 const ClientResourceSection = ({
-  cpuUsage = 0,
-  memoryUsage = 0,
-  diskUsage = 0,
-  networkRx = 0,
-  networkTx = 0
+  cpuUsage = 0, memoryUsage = 0, diskUsage = 0, networkRx = 0, networkTx = 0
 }: ClientResourceSectionProps) => {
   const { t } = useTranslation();
-  
-  // 格式化网络流量显示
   const rxFormatted = formatNetworkSpeed(networkRx);
   const txFormatted = formatNetworkSpeed(networkTx);
-  
+
+  const ResourceItem = ({ label, value, color, unit = '%', indicatorColor }: { label: string; value: number; color: string; unit?: string; indicatorColor: string }) => (
+    <div>
+      <div className="flex justify-between items-center mb-1">
+        <div className="flex items-center gap-2">
+          <span className={`w-2 h-2 rounded-full ${indicatorColor}`} />
+          <span className="text-xs text-slate-500">{label}</span>
+        </div>
+        <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{value.toFixed(1)}{unit}</span>
+      </div>
+      <ResourceBar value={value} color={color} height={6} />
+    </div>
+  );
+
   return (
-    <Box className="client-resource-section">
-      <Flex direction="column" gap="3">
-        {/* CPU使用率 */}
-        <Box className="resource-item">
-          <Flex justify="between" align="center" mb="1">
-            <Flex align="center" gap="2">
-              <Box className="resource-indicator resource-indicator-cpu" />
-              <Text size="2" className="resource-label">{t('clientResource.cpu')}</Text>
-            </Flex>
-            <Text size="2" weight="medium">{cpuUsage.toFixed(1)}%</Text>
-          </Flex>
-          <ResourceBar value={cpuUsage} color="green" height={6} />
-        </Box>
-        
-        {/* 内存使用率 */}
-        <Box className="resource-item">
-          <Flex justify="between" align="center" mb="1">
-            <Flex align="center" gap="2">
-              <Box className="resource-indicator resource-indicator-memory" />
-              <Text size="2" className="resource-label">{t('clientResource.memory')}</Text>
-            </Flex>
-            <Text size="2" weight="medium">{memoryUsage.toFixed(1)}%</Text>
-          </Flex>
-          <ResourceBar value={memoryUsage} color="blue" height={6} />
-        </Box>
-        
-        {/* 磁盘使用率 */}
-        <Box className="resource-item">
-          <Flex justify="between" align="center" mb="1">
-            <Flex align="center" gap="2">
-              <Box className="resource-indicator resource-indicator-disk" />
-              <Text size="2" className="resource-label">{t('clientResource.disk')}</Text>
-            </Flex>
-            <Text size="2" weight="medium">{diskUsage.toFixed(1)}%</Text>
-          </Flex>
-          <ResourceBar value={diskUsage} color="amber" height={6} />
-        </Box>
-        
-        {/* 网络流量 */}
-        <Box className="resource-item">
-          <Flex justify="between" align="center" mb="1">
-            <Text size="2" className="resource-label">{t('clientResource.network')}</Text>
-          </Flex>
-          <Flex gap="3" className="network-metrics">
-            {/* 下载速率 */}
-            <Box className="network-segment">
-              <Flex justify="between" align="center" mb="1">
-                <Flex align="center" gap="2">
-                  <Box className="resource-indicator resource-indicator-download" />
-                  <Text size="2" className="resource-label">{t('clientResource.download')}</Text>
-                </Flex>
-                <Text size="2" weight="medium">{rxFormatted.text}</Text>
-              </Flex>
-              <ResourceBar value={rxFormatted.percent} color="cyan" height={6} />
-            </Box>
-            
-            {/* 上传速率 */}
-            <Box className="network-segment">
-              <Flex justify="between" align="center" mb="1">
-                <Flex align="center" gap="2">
-                  <Box className="resource-indicator resource-indicator-upload" />
-                  <Text size="2" className="resource-label">{t('clientResource.upload')}</Text>
-                </Flex>
-                <Text size="2" weight="medium">{txFormatted.text}</Text>
-              </Flex>
-              <ResourceBar value={txFormatted.percent} color="indigo" height={6} />
-            </Box>
-          </Flex>
-        </Box>
-      </Flex>
-    </Box>
+    <div className="flex flex-col gap-3">
+      <ResourceItem label={t('clientResource.cpu')} value={cpuUsage} color="green" indicatorColor="bg-emerald-500" />
+      <ResourceItem label={t('clientResource.memory')} value={memoryUsage} color="blue" indicatorColor="bg-blue-500" />
+      <ResourceItem label={t('clientResource.disk')} value={diskUsage} color="amber" indicatorColor="bg-amber-500" />
+
+      {/* Network */}
+      <div>
+        <div className="mb-1">
+          <span className="text-xs text-slate-500">{t('clientResource.network')}</span>
+        </div>
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <div className="flex justify-between items-center mb-1">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-cyan-500" />
+                <span className="text-xs text-slate-500">{t('clientResource.download')}</span>
+              </div>
+              <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{rxFormatted.text}</span>
+            </div>
+            <ResourceBar value={rxFormatted.percent} color="cyan" height={6} />
+          </div>
+          <div className="flex-1">
+            <div className="flex justify-between items-center mb-1">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                <span className="text-xs text-slate-500">{t('clientResource.upload')}</span>
+              </div>
+              <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{txFormatted.text}</span>
+            </div>
+            <ResourceBar value={txFormatted.percent} color="indigo" height={6} />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
-export default ClientResourceSection; 
+export default ClientResourceSection;

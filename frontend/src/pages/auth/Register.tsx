@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Button, Card, Flex, Heading, Text } from '@radix-ui/themes';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 
@@ -19,14 +18,8 @@ const Register = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (password !== confirmPassword) {
-      setError(t('register.error.passwordMismatch'));
-      return;
-    }
-
+    if (password !== confirmPassword) { setError(t('register.error.passwordMismatch')); return; }
     setIsLoading(true);
-
     try {
       const result = await register({ username, password, email });
       if (result.success) {
@@ -42,80 +35,32 @@ const Register = () => {
   };
 
   return (
-    <div className="page-container">
-      <Flex justify="center" align="center" style={{ minHeight: 'calc(100vh - 130px)', padding: '2rem 0' }}>
-        <Card className="auth-card" style={{ width: '400px', padding: '2.5rem 2rem 2rem' }}>
-          <Flex direction="column" gap="4">
-            <Heading align="center" size="6" mb="1">{t('register.title')}</Heading>
+    <div className="max-w-md mx-auto px-4 flex items-center justify-center min-h-[calc(100vh-130px)]">
+      <div className="w-full glass p-8 relative overflow-hidden">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
+        <h2 className="text-2xl font-bold text-center mb-6 text-slate-900 dark:text-white">{t('register.title')}</h2>
 
-            {error && (
-              <Text color="red" align="center" size="2" style={{
-                background: 'var(--red-2)',
-                padding: '8px 12px',
-                borderRadius: '8px',
-              }}>{error}</Text>
-            )}
+        {error && <div className="bg-red-500/10 text-red-500 text-sm px-4 py-2 rounded-lg mb-4 text-center">{error}</div>}
 
-            <form onSubmit={handleSubmit}>
-              <Flex direction="column" gap="3">
-                <div className="input-wrapper">
-                  <input
-                    placeholder={t('register.username')}
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                    className="text-input"
-                  />
-                </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <input placeholder={t('register.username')} value={username} onChange={e => setUsername(e.target.value)}
+            required className="input-modern" />
+          <input placeholder={t('register.email')} type="email" value={email} onChange={e => setEmail(e.target.value)}
+            required className="input-modern" />
+          <input placeholder={t('register.password')} type="password" value={password} onChange={e => setPassword(e.target.value)}
+            required className="input-modern" />
+          <input placeholder={t('register.confirmPassword')} type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+            required className="input-modern" />
+          <button type="submit" disabled={isLoading}
+            className="btn-gradient py-2.5 text-sm mt-1 disabled:opacity-60">
+            {isLoading ? t('common.loading') : t('register.button')}
+          </button>
+        </form>
 
-                <div className="input-wrapper">
-                  <input
-                    placeholder={t('register.email')}
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="text-input"
-                  />
-                </div>
-
-                <div className="input-wrapper">
-                  <input
-                    placeholder={t('register.password')}
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="text-input"
-                  />
-                </div>
-
-                <div className="input-wrapper">
-                  <input
-                    placeholder={t('register.confirmPassword')}
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    className="text-input"
-                  />
-                </div>
-
-                <Button type="submit" disabled={isLoading} style={{
-                  background: 'linear-gradient(135deg, var(--accent-9), var(--accent-8))',
-                  marginTop: '4px',
-                }}>
-                  {isLoading ? t('common.loading') : t('register.button')}
-                </Button>
-              </Flex>
-            </form>
-
-            <Text align="center" size="2" style={{ color: 'var(--gray-9)' }}>
-              {t('register.loginLink')} <Link to="/login" style={{ color: 'var(--accent-9)', fontWeight: 600 }}>{t('navbar.login')}</Link>
-            </Text>
-          </Flex>
-        </Card>
-      </Flex>
+        <p className="text-center text-sm text-slate-500 mt-5">
+          {t('register.loginLink')} <Link to="/login" className="text-blue-500 hover:text-blue-400 font-semibold">{t('navbar.login')}</Link>
+        </p>
+      </div>
     </div>
   );
 };

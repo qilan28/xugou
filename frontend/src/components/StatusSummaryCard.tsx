@@ -1,6 +1,4 @@
-import { Box, Card, Flex, Heading, Text } from '@radix-ui/themes';
 import { ReactNode } from 'react';
-import '../styles/components.css';
 
 interface StatusItem {
   icon: ReactNode;
@@ -16,48 +14,30 @@ interface StatusSummaryCardProps {
 }
 
 const StatusSummaryCard = ({ title, items }: StatusSummaryCardProps) => {
-
   return (
-    <Card className="status-summary-card" style={{ position: 'relative', overflow: 'hidden' }}>
-      <Box style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '3px',
-        height: '100%',
-        background: 'linear-gradient(180deg, var(--accent-7), var(--accent-9), var(--accent-7))',
-        borderRadius: '0 2px 2px 0',
-      }} />
-      <Box p="4">
-        <Heading size="4" mb="2" style={{ color: 'var(--gray-12)' }}>{title}</Heading>
-        <Flex direction="column" gap="2" mt="2">
+    <div className="glass relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-blue-500 via-purple-500 to-blue-500 rounded-r-sm" />
+      <div className="p-5">
+        <h3 className="text-base font-semibold mb-3 text-slate-900 dark:text-white">{title}</h3>
+        <div className="flex flex-col gap-2">
           {items.map((item, index) => (
-            <Flex key={index} justify="between" align="center" style={{
-              padding: '10px 12px',
-              borderRadius: '8px',
-              backgroundColor: item.bgColor || 'var(--gray-2)',
-              transition: 'transform 0.15s ease',
-            }}>
-              <Flex align="center" gap="2">
-                <Box
-                  className="status-icon-container"
-                  style={{
-                    background: 'rgba(255,255,255,0.6)',
-                    color: item.iconColor,
-                  }}
-                >
+            <div key={index} className="flex items-center justify-between px-3 py-2.5 rounded-lg"
+              style={{ backgroundColor: item.bgColor || 'rgba(148,163,184,0.1)' }}>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/60 dark:bg-white/10"
+                  style={{ color: item.iconColor }}>
                   {item.icon}
-                </Box>
-                <Text size="2" weight="medium">{item.label}</Text>
-              </Flex>
-              <Heading size="6" style={{ color: item.iconColor || 'var(--gray-12)', fontWeight: 700 }}>
+                </div>
+                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{item.label}</span>
+              </div>
+              <span className="text-2xl font-bold" style={{ color: item.iconColor || '#64748b' }}>
                 {item.value}
-              </Heading>
-            </Flex>
+              </span>
+            </div>
           ))}
-        </Flex>
-      </Box>
-    </Card>
+        </div>
+      </div>
+    </div>
   );
 };
 
